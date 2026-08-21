@@ -1,0 +1,21 @@
+# Forge workflow artifacts — local-only planning state
+docs/forge/
+
+# Dependencies
+node_modules/
+
+# Local data snapshot — never published (ADR-1)
+data/
+
+# Build output
+dist/
+.vite/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor cruft
+.DS_Store
+*.swp
