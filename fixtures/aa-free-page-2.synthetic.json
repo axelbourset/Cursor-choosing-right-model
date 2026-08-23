@@ -1,0 +1,713 @@
+{
+  "tier": "free",
+  "intelligence_index_version": 4.1,
+  "pagination": {
+    "page": 2,
+    "page_size": 22,
+    "total_pages": 2,
+    "has_more": false
+  },
+  "data": [
+    {
+      "id": "00000000-0000-4000-8000-000000000023",
+      "name": "Fixture Model 23 (Adaptive Reasoning, Max Effort)",
+      "slug": "gemini-3-6-flash",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 31,
+        "artificial_analysis_coding_index": 41,
+        "artificial_analysis_agentic_index": 26
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 3.1,
+        "cost_per_task": {
+          "total_cost": 0.31
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 4,
+        "price_1m_output_tokens": 9,
+        "price_1m_cache_hit_tokens": 0.4,
+        "price_1m_cache_write_tokens": 5.0
+      },
+      "performance": {
+        "median_output_tokens_per_second": 73,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000024",
+      "name": "Fixture Model 24 (Adaptive Reasoning, Max Effort)",
+      "slug": "gemini-3-7-flash",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 28,
+        "artificial_analysis_coding_index": null,
+        "artificial_analysis_agentic_index": null
+      },
+      "artificial_analysis_intelligence_index_cost": null,
+      "pricing": {
+        "price_1m_input_tokens": 5,
+        "price_1m_output_tokens": 10,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 74,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000025",
+      "name": "Fixture Model 25 (Adaptive Reasoning, Max Effort)",
+      "slug": "glm-5-2",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 25,
+        "artificial_analysis_coding_index": 35,
+        "artificial_analysis_agentic_index": 20
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 2.5,
+        "cost_per_task": {
+          "total_cost": 0.25
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 1,
+        "price_1m_output_tokens": 11,
+        "price_1m_cache_hit_tokens": 0.1,
+        "price_1m_cache_write_tokens": 1.25
+      },
+      "performance": {
+        "median_output_tokens_per_second": 75,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000026",
+      "name": "Fixture Model 26 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 22,
+        "artificial_analysis_coding_index": 32,
+        "artificial_analysis_agentic_index": 17
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 2.2,
+        "cost_per_task": {
+          "total_cost": 0.22
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 2,
+        "price_1m_output_tokens": 12,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 76,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000027",
+      "name": "Fixture Model 27 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 59,
+        "artificial_analysis_coding_index": null,
+        "artificial_analysis_agentic_index": null
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 5.9,
+        "cost_per_task": {
+          "total_cost": 0.59
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 3,
+        "price_1m_output_tokens": 4,
+        "price_1m_cache_hit_tokens": 0.30000000000000004,
+        "price_1m_cache_write_tokens": 3.75
+      },
+      "performance": {
+        "median_output_tokens_per_second": 77,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000028",
+      "name": "Fixture Model 28 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-mini-medium",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 56,
+        "artificial_analysis_coding_index": 66,
+        "artificial_analysis_agentic_index": 51
+      },
+      "artificial_analysis_intelligence_index_cost": null,
+      "pricing": {
+        "price_1m_input_tokens": 4,
+        "price_1m_output_tokens": 5,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 78,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000029",
+      "name": "Fixture Model 29 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-codex",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 53,
+        "artificial_analysis_coding_index": 63,
+        "artificial_analysis_agentic_index": 48
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 5.3,
+        "cost_per_task": {
+          "total_cost": 0.53
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 5,
+        "price_1m_output_tokens": 6,
+        "price_1m_cache_hit_tokens": 0.5,
+        "price_1m_cache_write_tokens": 6.25
+      },
+      "performance": {
+        "median_output_tokens_per_second": 79,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000030",
+      "name": "Fixture Model 30 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-1-codex",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 50,
+        "artificial_analysis_coding_index": null,
+        "artificial_analysis_agentic_index": null
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 5.0,
+        "cost_per_task": {
+          "total_cost": 0.5
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 1,
+        "price_1m_output_tokens": 7,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 80,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000031",
+      "name": "Fixture Model 31 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-1-codex-mini",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 47,
+        "artificial_analysis_coding_index": 57,
+        "artificial_analysis_agentic_index": 42
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 4.7,
+        "cost_per_task": {
+          "total_cost": 0.47
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 2,
+        "price_1m_output_tokens": 8,
+        "price_1m_cache_hit_tokens": 0.2,
+        "price_1m_cache_write_tokens": 2.5
+      },
+      "performance": {
+        "median_output_tokens_per_second": 81,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000032",
+      "name": "Fixture Model 32 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-2",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 44,
+        "artificial_analysis_coding_index": 54,
+        "artificial_analysis_agentic_index": 39
+      },
+      "artificial_analysis_intelligence_index_cost": null,
+      "pricing": {
+        "price_1m_input_tokens": 3,
+        "price_1m_output_tokens": 9,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 82,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000033",
+      "name": "Fixture Model 33 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-2-codex",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 41,
+        "artificial_analysis_coding_index": null,
+        "artificial_analysis_agentic_index": null
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 4.1,
+        "cost_per_task": {
+          "total_cost": 0.41
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 4,
+        "price_1m_output_tokens": 10,
+        "price_1m_cache_hit_tokens": 0.4,
+        "price_1m_cache_write_tokens": 5.0
+      },
+      "performance": {
+        "median_output_tokens_per_second": 83,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000034",
+      "name": "Fixture Model 34 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-3-codex",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 38,
+        "artificial_analysis_coding_index": 48,
+        "artificial_analysis_agentic_index": 33
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 3.8,
+        "cost_per_task": {
+          "total_cost": 0.38
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 5,
+        "price_1m_output_tokens": 11,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 84,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000035",
+      "name": "Fixture Model 35 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-4",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 35,
+        "artificial_analysis_coding_index": 45,
+        "artificial_analysis_agentic_index": 30
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 3.5,
+        "cost_per_task": {
+          "total_cost": 0.35
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 1,
+        "price_1m_output_tokens": 12,
+        "price_1m_cache_hit_tokens": 0.1,
+        "price_1m_cache_write_tokens": 1.25
+      },
+      "performance": {
+        "median_output_tokens_per_second": 85,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000036",
+      "name": "Fixture Model 36 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-4-mini",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 32,
+        "artificial_analysis_coding_index": null,
+        "artificial_analysis_agentic_index": null
+      },
+      "artificial_analysis_intelligence_index_cost": null,
+      "pricing": {
+        "price_1m_input_tokens": 2,
+        "price_1m_output_tokens": 4,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 86,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000037",
+      "name": "Fixture Model 37 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-4-nano",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 29,
+        "artificial_analysis_coding_index": 39,
+        "artificial_analysis_agentic_index": 24
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 2.9,
+        "cost_per_task": {
+          "total_cost": 0.29
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 3,
+        "price_1m_output_tokens": 5,
+        "price_1m_cache_hit_tokens": 0.30000000000000004,
+        "price_1m_cache_write_tokens": 3.75
+      },
+      "performance": {
+        "median_output_tokens_per_second": 87,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000038",
+      "name": "Fixture Model 38 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-5",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 26,
+        "artificial_analysis_coding_index": 36,
+        "artificial_analysis_agentic_index": 21
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 2.6,
+        "cost_per_task": {
+          "total_cost": 0.26
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 4,
+        "price_1m_output_tokens": 6,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 88,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000039",
+      "name": "Fixture Model 39 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-6-luna",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 23,
+        "artificial_analysis_coding_index": null,
+        "artificial_analysis_agentic_index": null
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 2.3,
+        "cost_per_task": {
+          "total_cost": 0.23
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 5,
+        "price_1m_output_tokens": 7,
+        "price_1m_cache_hit_tokens": 0.5,
+        "price_1m_cache_write_tokens": 6.25
+      },
+      "performance": {
+        "median_output_tokens_per_second": 89,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000040",
+      "name": "Fixture Model 40 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-6-sol",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 20,
+        "artificial_analysis_coding_index": 30,
+        "artificial_analysis_agentic_index": 15
+      },
+      "artificial_analysis_intelligence_index_cost": null,
+      "pricing": {
+        "price_1m_input_tokens": 1,
+        "price_1m_output_tokens": 8,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 90,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000041",
+      "name": "Fixture Model 41 (Adaptive Reasoning, Max Effort)",
+      "slug": "gpt-5-6-terra",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 57,
+        "artificial_analysis_coding_index": 67,
+        "artificial_analysis_agentic_index": 52
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 5.7,
+        "cost_per_task": {
+          "total_cost": 0.57
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 2,
+        "price_1m_output_tokens": 9,
+        "price_1m_cache_hit_tokens": 0.2,
+        "price_1m_cache_write_tokens": 2.5
+      },
+      "performance": {
+        "median_output_tokens_per_second": 91,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000042",
+      "name": "Fixture Model 42 (Adaptive Reasoning, Max Effort)",
+      "slug": "kimi-k2-7-code",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 54,
+        "artificial_analysis_coding_index": null,
+        "artificial_analysis_agentic_index": null
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 5.4,
+        "cost_per_task": {
+          "total_cost": 0.54
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 3,
+        "price_1m_output_tokens": 10,
+        "price_1m_cache_hit_tokens": null,
+        "price_1m_cache_write_tokens": null
+      },
+      "performance": {
+        "median_output_tokens_per_second": 92,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000043",
+      "name": "Fixture Model 43 (Adaptive Reasoning, Max Effort)",
+      "slug": "kimi-k3",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 51,
+        "artificial_analysis_coding_index": 61,
+        "artificial_analysis_agentic_index": 46
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 5.1,
+        "cost_per_task": {
+          "total_cost": 0.51
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 4,
+        "price_1m_output_tokens": 11,
+        "price_1m_cache_hit_tokens": 0.4,
+        "price_1m_cache_write_tokens": 5.0
+      },
+      "performance": {
+        "median_output_tokens_per_second": 93,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000099",
+      "name": "Fixture Model 99 (Non-reasoning)",
+      "slug": "fixture-non-reasoning",
+      "release_date": "2026-01-01",
+      "model_creator": {
+        "id": "00000000-0000-4000-8000-0000000000aa",
+        "name": "Fixture Labs"
+      },
+      "evaluations": {
+        "artificial_analysis_intelligence_index": 43,
+        "artificial_analysis_coding_index": null,
+        "artificial_analysis_agentic_index": null
+      },
+      "artificial_analysis_intelligence_index_cost": {
+        "total_cost": 4.3,
+        "cost_per_task": {
+          "total_cost": 0.43
+        }
+      },
+      "pricing": {
+        "price_1m_input_tokens": 5,
+        "price_1m_output_tokens": 4,
+        "price_1m_cache_hit_tokens": 0.5,
+        "price_1m_cache_write_tokens": 6.25
+      },
+      "performance": {
+        "median_output_tokens_per_second": 149,
+        "median_time_to_first_token_seconds": 1.0,
+        "median_time_to_first_answer_token_seconds": 1.0,
+        "median_end_to_end_response_time_seconds": 5.0
+      }
+    }
+  ]
+}
