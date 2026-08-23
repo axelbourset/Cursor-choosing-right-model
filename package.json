@@ -1,0 +1,47 @@
+{
+  "name": "cursor-model-picker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "refresh": "tsx --tsconfig tsconfig.scripts.json scripts/refresh/index.ts",
+    "lint": "eslint .",
+    "lint:staged": "eslint $(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(ts|tsx)$' | tr '\\n' ' ')",
+    "format": "prettier --write .",
+    "format:staged": "prettier --write $(git diff --cached --name-only --diff-filter=ACM | tr '\\n' ' ')",
+    "depcruise": "depcruise --config .dependency-cruiser.cjs domain schema src scripts",
+    "guard": "tsx --tsconfig tsconfig.scripts.json scripts/guard-no-data.ts",
+    "verify": "npm run lint && npm run depcruise && npm run test && npm run guard && npm run build"
+  },
+  "dependencies": {
+    "echarts": "^6.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "dependency-cruiser": "^18.2.0",
+    "eslint": "^10.9.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.67.0",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}
