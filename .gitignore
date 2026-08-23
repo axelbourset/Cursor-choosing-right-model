@@ -10,6 +10,7 @@ data/
 # Build output
 dist/
 .vite/
+*.tsbuildinfo
 
 # Environment / secrets
 .env
