@@ -1,0 +1,55 @@
+:root {
+  --bg: #ffffff;
+  --text: #1a1a1a;
+  --border: #d0d0d0;
+  --muted: #666666;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --text: #f0f0f0;
+    --border: #333333;
+    --muted: #aaaaaa;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+[data-testid='cost-scatter-chart'],
+[data-testid='score-bar-chart'] {
+  height: 400px;
+  width: 100%;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+footer {
+  margin-top: 2rem;
+  color: var(--muted);
+}
+
+footer a {
+  color: inherit;
+}
