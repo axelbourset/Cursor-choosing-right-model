@@ -1,29 +1,34 @@
-/* ─── tokens live in tokens.css; squircle utilities in squircle.css ────────── */
+/* ─── tokens live in tokens.css ───────────────────────────────────────────── */
 
 /* ─── base ───────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
 
+::selection {
+  background: var(--mint);
+  color: var(--ink-inverted);
+}
+
+html {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
-  background: var(--surface-0);
-  color: var(--text-primary);
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
-  font-size: var(--step-0);
-  line-height: 1.5;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 .app-container {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: var(--sp-5) var(--sp-4) var(--sp-6);
+  padding: var(--sp-6) clamp(var(--sp-4), 4vw, var(--sp-8)) var(--sp-8);
 }
 
 button,
@@ -33,85 +38,132 @@ input {
   color: inherit;
 }
 
-/* ─── header ─────────────────────────────────────────────────────────────── */
-.site-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sp-3);
-  padding-bottom: var(--sp-4);
-  border-bottom: 1px solid var(--border);
+a {
+  color: var(--ink);
+}
+a:hover {
+  color: var(--link-hover);
 }
 
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ─── masthead ───────────────────────────────────────────────────────────── */
+.site-header {
+  margin-bottom: var(--sp-6);
+  padding-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* thin-weight uppercase eyebrow — the whisper under the display shout */
+.site-header__eyebrow {
+  margin: 0 0 var(--sp-2);
+  color: var(--ink);
+  font-size: var(--fs-eyebrow);
+  font-weight: 300;
+  letter-spacing: 1.9px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* display face lives here and only here — below ~48px it would be a bug */
 .site-header__title {
   margin: 0;
-  margin-right: auto;
-  font-size: var(--step-3);
-  font-weight: 640;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-hero);
+  font-weight: 400; /* the display face ships one, already display-grade weight */
+  letter-spacing: 0.015em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.site-header__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-4);
+  margin-top: var(--sp-4);
 }
 
 .site-header__meta {
   margin: 0;
-  color: var(--text-muted);
-  font-size: var(--step--1);
+  color: var(--ink-meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
 }
 
 .site-header__meta + .site-header__meta::before {
   content: '·';
   margin-right: var(--sp-3);
-  color: var(--text-muted);
-}
-
-/* ─── header meta row: date · models · index version · source, plus quiet
-   replace/clear links at the end of the row (folded in from the old
-   source banner — D2 elevation rules do not apply, this carries no surface) ── */
-.site-header__meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sp-3);
+  color: var(--ink-meta);
 }
 
 .site-header__actions {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-3);
-  margin-left: var(--sp-2);
+  gap: var(--sp-2);
+  margin-left: auto;
 }
 
+/* pill actions — mono uppercase labels, 44px touch target */
 .site-header__action {
   position: relative;
-  margin: 0;
-  padding: 0;
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-5);
+  background: var(--slate);
   border: 0;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: var(--step--1);
+  border-radius: var(--radius-feature);
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  line-height: 2;
+  text-transform: uppercase;
   cursor: pointer;
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
 }
 
 .site-header__action:hover {
-  color: var(--accent);
+  background: var(--hover-fill);
+  color: var(--ink-inverted);
 }
 
-.site-header__action:focus-visible,
-.site-header__action:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.site-header__action:active {
+  background: var(--pressed);
 }
 
-/* Same divider convention as .site-header__meta above — without it "replace",
-   "use local file" and "clear data" run together as one phrase. */
-.site-header__action + .site-header__action::before {
-  content: '·';
-  margin-right: var(--sp-3);
-  color: var(--text-muted);
+/* the one filled hazard — the primary control on the page */
+.site-header__action--primary {
+  background: var(--mint);
+  color: var(--ink-inverted);
+}
+
+/* outlined promo pill — white text on the hazard border, 30px radius */
+.site-header__action--outline {
+  background: transparent;
+  border: 1px solid var(--ultraviolet);
+  border-radius: var(--radius-promo);
+  color: var(--ink);
+}
+
+.site-header__action--outline:hover {
+  background: var(--ultraviolet);
+  color: var(--ink);
+  box-shadow: none;
 }
 
 /* Visually hidden, not display:none — stays keyboard-reachable and findable
@@ -758,18 +810,22 @@ input {
 
 /* ─── footer ─────────────────────────────────────────────────────────────── */
 .site-footer {
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-8);
   padding-top: var(--sp-4);
-  border-top: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: var(--step--1);
+  border-top: 1px solid var(--frame);
 }
 
 .site-footer a {
-  color: var(--text-secondary);
+  color: var(--ink-meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  text-decoration: none;
 }
 .site-footer a:hover {
-  color: var(--accent);
+  color: var(--link-hover);
 }
 
 /* ─── responsive ─────────────────────────────────────────────────────────── */
@@ -777,8 +833,8 @@ input {
   .app-container {
     padding: var(--sp-4) var(--sp-3);
   }
-  .site-header__title {
-    font-size: var(--step-2);
+  .site-header__actions {
+    margin-left: 0;
   }
   .panel__chart {
     height: 320px;
@@ -789,35 +845,9 @@ input {
 }
 
 /* ═══ design pass ═══════════════════════════════════════════════════════════
-   The first version read as grey-on-grey because nothing carried weight:
-   panels sat at 1.07:1 against the page, the accent appeared once, and every
-   type size was within 2px of its neighbour. This section fixes hierarchy. */
-
-/* Header: make the title the loudest thing on the page, and let the meta
-   recede properly instead of competing at near-equal weight. */
-.site-header {
-  align-items: last baseline;
-  margin-bottom: var(--sp-5);
-  padding-bottom: var(--sp-4);
-}
-
-.site-header__title {
-  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  background: linear-gradient(180deg, var(--text-primary), var(--text-secondary));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.site-header__meta {
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
+   Legacy overrides from the previous visual language. Header and footer rules
+   were removed with the masthead restyle; the panel, tab, table and drop zone
+   rules below are superseded in their own tasks. */
 
 /* Panels: a coloured top edge is what actually separates them from the page —
    the surface step alone measures 1.07:1 and is invisible. */

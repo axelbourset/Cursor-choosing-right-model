@@ -40,6 +40,7 @@ function Header({
 }) {
   return (
     <header className="site-header">
+      <p className="site-header__eyebrow">Benchmarks · Prices · Pareto Frontier</p>
       <h1 className="site-header__title">Cursor Model Picker</h1>
       {loaded ? (
         <div className="site-header__meta-row">
@@ -56,7 +57,7 @@ function Header({
             {loaded.source === 'dropped' ? 'dropped file' : 'local file'}
           </p>
           <div className="site-header__actions">
-            <label className="site-header__action">
+            <label className="site-header__action site-header__action--primary">
               replace
               <input
                 type="file"
@@ -69,7 +70,11 @@ function Header({
               />
             </label>
             {loaded.source === 'dropped' ? (
-              <button className="site-header__action" type="button" onClick={onUseLocal}>
+              <button
+                className="site-header__action site-header__action--outline"
+                type="button"
+                onClick={onUseLocal}
+              >
                 use local file
               </button>
             ) : null}
