@@ -1,0 +1,92 @@
+/* ─── design tokens — dark is the default ────────────────────────────────── */
+:root {
+  /* radii — six-step scale (D5). `full` is a stadium, no squircle. */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  /* the single canonical curve knob — `corner-shape: squircle` is superellipse(2) (D1) */
+  --corner: squircle;
+
+  /* surfaces (dark-first, measured — D2). --surface-1 is the value the palette was
+     validated against; do not change it. */
+  --surface-0: #0d0d0e; /* page */
+  --surface-1: #1a1a19; /* panels and chart surface — load-bearing */
+  --surface-2: #23242a; /* inputs, chips */
+  --surface-3: #303034; /* sticky header, hover — 1.33:1 from the panel */
+
+  /* the load-bearing edge — 1.54:1 on the panel. Applied as an inset ring (D2) so it
+     survives the fallback's clip-path. */
+  --border: #3a3a3d;
+
+  /* ink */
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8a8a82;
+
+  /* categorical series (D4). Validated dark palette on --surface-1. */
+  --series-1: #3987e5; /* blue — frontier / bar */
+  --series-2: #d95926; /* orange — dominated */
+  --series-3: #199e70; /* aqua — third series if needed */
+  --series-4: #c98500; /* yellow — provider chips only */
+  --series-5: #d55181; /* magenta — provider chips only */
+  --series-6: #008300; /* green — provider chips only */
+  --series-7: #9085e9; /* violet — provider chips only */
+  --series-8: #e66767; /* red — provider chips only */
+
+  /* accent — focus rings, active borders, active text only (D4 rule).
+     Same hue as --series-1; NEVER a filled background behind chart marks. */
+  --accent: #3987e5; /* 4.79:1 on panel, 5.34:1 on page */
+  --accent-soft: #1d3550; /* pill fills — white text on it is 12.5:1 */
+
+  /* status — reserved, never reused as a series */
+  --status-good: #199e70;
+  --status-warning: #c98500;
+  --status-serious: #d95926;
+  --status-critical: #e66767;
+
+  /* spacing — unchanged from I01 */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+
+  /* type scale — unchanged from I01 */
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.0625rem;
+  --step-2: 1.375rem;
+  --step-3: 1.875rem;
+}
+
+/* ─── light override — selected, not an auto-flip ────────────────────────── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --surface-0: #fbfbfa;
+    --surface-1: #ffffff;
+    --surface-2: #f5f5f4;
+    --surface-3: #ececea;
+    --border: #d8d8d4;
+    --text-primary: #1c1c1a;
+    --text-secondary: #4a4a46;
+    --text-muted: #6b6b66;
+    --series-1: #2f6f4f;
+    --series-2: #c0533f;
+    --series-3: #199e70;
+    --series-4: #8a5a00;
+    --series-5: #b03f6b;
+    --series-6: #007a00;
+    --series-7: #6a5fb8;
+    --series-8: #c04545;
+    --accent: #2f6f4f;
+    --accent-soft: #e8f1eb;
+    --status-good: #199e70;
+    --status-warning: #8a5a00;
+    --status-serious: #c0533f;
+    --status-critical: #b03a30;
+  }
+}
