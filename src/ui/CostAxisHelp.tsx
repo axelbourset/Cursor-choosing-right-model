@@ -40,9 +40,9 @@ export function CostAxisHelp() {
           </div>
         </dl>
         <p className="info-tip__note">
-          <strong>Your recent usage (Jul–Aug 2026):</strong> ~138M input · ~18M output · ~2.7B cache
-          read tokens. Cache read dominated both volume and spend — try that axis if you&apos;re
-          picking a model for heavy agent work.
+          <strong>One month usage example:</strong> ~138M input · ~18M output · ~2.7B cache read
+          tokens. Cache read dominated both volume and spend — try that axis if you&apos;re picking
+          a model for heavy agent work.
         </p>
       </div>
     </span>
