@@ -11,10 +11,14 @@ import { resolve } from 'node:path'
 
 const tokensText = readFileSync(resolve('src/tokens.css'), 'utf-8')
 
-/** Read the dark `:root` block of tokens.css (before the light `@media` override). */
+/** Read the dark `:root` block of tokens.css (before the light opt-in override). */
 function darkRootBlock(): string {
+  // The light override is an opt-in `:root[data-theme='light']` block (not an
+  // @media auto-flip). Slice before it; fall back to the whole file if absent.
+  const lightIndex = tokensText.indexOf(':root[data-theme')
   const mediaIndex = tokensText.indexOf('@media')
-  return mediaIndex === -1 ? tokensText : tokensText.slice(0, mediaIndex)
+  const cut = lightIndex === -1 ? mediaIndex : lightIndex
+  return cut === -1 ? tokensText : tokensText.slice(0, cut)
 }
 
 /** Extract a `--token: #hex;` value from a CSS block. */

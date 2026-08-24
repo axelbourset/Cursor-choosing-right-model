@@ -63,30 +63,31 @@
   --step-3: 1.875rem;
 }
 
-/* ─── light override — selected, not an auto-flip ────────────────────────── */
-@media (prefers-color-scheme: light) {
-  :root {
-    --surface-0: #fbfbfa;
-    --surface-1: #ffffff;
-    --surface-2: #f5f5f4;
-    --surface-3: #ececea;
-    --border: #d8d8d4;
-    --text-primary: #1c1c1a;
-    --text-secondary: #4a4a46;
-    --text-muted: #6b6b66;
-    --series-1: #2f6f4f;
-    --series-2: #c0533f;
-    --series-3: #199e70;
-    --series-4: #8a5a00;
-    --series-5: #b03f6b;
-    --series-6: #007a00;
-    --series-7: #6a5fb8;
-    --series-8: #c04545;
-    --accent: #2f6f4f;
-    --accent-soft: #e8f1eb;
-    --status-good: #199e70;
-    --status-warning: #8a5a00;
-    --status-serious: #c0533f;
-    --status-critical: #b03a30;
-  }
+/* ─── light override — opt-in only, not an auto-flip (per plan R01) ───────────
+ * Dark is the unconditional default on bare :root. Light applies only when the
+ * document opts in via <html data-theme="light">. It does NOT follow the OS
+ * prefers-color-scheme setting, so a light-mode OS still gets the dark design. */
+:root[data-theme='light'] {
+  --surface-0: #fbfbfa;
+  --surface-1: #ffffff;
+  --surface-2: #f5f5f4;
+  --surface-3: #ececea;
+  --border: #d8d8d4;
+  --text-primary: #1c1c1a;
+  --text-secondary: #4a4a46;
+  --text-muted: #6b6b66;
+  --series-1: #2f6f4f;
+  --series-2: #c0533f;
+  --series-3: #199e70;
+  --series-4: #8a5a00;
+  --series-5: #b03f6b;
+  --series-6: #007a00;
+  --series-7: #6a5fb8;
+  --series-8: #c04545;
+  --accent: #2f6f4f;
+  --accent-soft: #e8f1eb;
+  --status-good: #199e70;
+  --status-warning: #8a5a00;
+  --status-serious: #c0533f;
+  --status-critical: #b03a30;
 }
