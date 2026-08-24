@@ -1,42 +1,44 @@
 /**
- * Chart theme — the single source of colour for the ECharts option builders.
+ * Chart theme — the single source of colour and type for the ECharts option
+ * builders.
  *
- * The series hexes are the validated dark categorical palette (D4), duplicated here
- * from `src/tokens.css` because jsdom does not reliably resolve CSS custom
- * properties declared in a stylesheet. Keeping the builders pure (no DOM access)
- * means they take this constant as an explicit argument. `theme.test.ts` asserts
- * the two copies agree so the duplication cannot drift silently.
- *
- * These are the DARK values (the design default). Light mode is a courtesy and is
- * not mirrored into the charts — the chart surface stays dark per the design.
+ * Providers own their identity colours (providerColors.ts); this theme carries
+ * everything shared: canvas, ink, hairlines, hazard accents, and the font
+ * stacks. The values are duplicated from `src/tokens.css` because jsdom does
+ * not reliably resolve CSS custom properties declared in a stylesheet — keeping
+ * the builders pure (no DOM access) means they take this constant as an
+ * explicit argument. `theme.test.ts` asserts the two copies agree so the
+ * duplication cannot drift silently.
  */
 
 export interface ChartTheme {
-  /** D4 categorical palette, slots 1–8. Only 1–3 clear the all-pairs CVD floors. */
-  readonly series: readonly string[]
-  /** Ink — primary label text. */
+  /** The chart's page canvas — tooltip fills, anything that must melt into the page. */
+  readonly canvas: string
+  /** Ink — primary text (tooltip titles, strong values). */
   readonly textPrimary: string
-  /** Ink — secondary label text. */
+  /** Ink — secondary text (tooltip body). */
   readonly textSecondary: string
-  /** Ink — recessive axes/grid. */
+  /** Ink — metadata (axis labels, legend, grid). */
   readonly textMuted: string
-  /** Edge — chart frame, if ever drawn. */
+  /** Quiet 1px frame for recessive structure. */
   readonly border: string
+  /** Primary hazard accent — the frontier line. */
+  readonly mint: string
+  /** Secondary hazard accent. */
+  readonly ultraviolet: string
+  /** Font stacks, mirrored from tokens.css. */
+  readonly fontSans: string
+  readonly fontMono: string
 }
 
 export const CHART_THEME: ChartTheme = {
-  series: [
-    '#3987e5', // 1 blue — frontier / bar
-    '#d95926', // 2 orange — dominated
-    '#199e70', // 3 aqua — third series if needed
-    '#c98500', // 4 yellow — provider chips only
-    '#d55181', // 5 magenta — provider chips only
-    '#008300', // 6 green — provider chips only
-    '#9085e9', // 7 violet — provider chips only
-    '#e66767', // 8 red — provider chips only
-  ],
+  canvas: '#131313',
   textPrimary: '#ffffff',
-  textSecondary: '#c3c2b7',
-  textMuted: '#8a8a82',
-  border: '#3a3a3d',
+  textSecondary: '#e9e9e9',
+  textMuted: '#949494',
+  border: '#313131',
+  mint: '#3cffd0',
+  ultraviolet: '#5200ff',
+  fontSans: "'Space Grotesk Variable', 'Space Grotesk', system-ui, sans-serif",
+  fontMono: "'JetBrains Mono Variable', 'JetBrains Mono', 'Courier New', monospace",
 }

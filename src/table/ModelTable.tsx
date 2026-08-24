@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ModelRow } from '@schema/snapshot'
 import { colorForProvider } from '../charts/providerColors'
-import { CHART_THEME } from '../charts/theme'
 import { COLUMNS } from './columns'
 import { useSortedRows } from './useSortedRows'
 
@@ -89,7 +88,7 @@ export function ModelTable({ rows }: ModelTableProps) {
                         <span className="provider-chip">
                           <span
                             className="provider-chip__dot"
-                            style={{ background: colorForProvider(row.provider, CHART_THEME) }}
+                            style={{ background: colorForProvider(row.provider) }}
                             aria-hidden="true"
                           />
                           {value}

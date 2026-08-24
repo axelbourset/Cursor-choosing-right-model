@@ -3,7 +3,7 @@ import type { CostAxisKey, MetricKey, ModelRow } from '@schema/snapshot'
 import type { ParetoResult } from '@domain/pareto'
 import { isOnFrontier } from '@domain/pareto'
 import { CHART_THEME, type ChartTheme } from './theme'
-import { colorForProvider, isHollowSymbol, symbolForProvider } from './providerColors'
+import { colorForProvider } from './providerColors'
 
 const DOMINATED_OPACITY = 0.5
 const FRONTIER_SYMBOL_SIZE = 16
@@ -53,34 +53,22 @@ function scatterPoint(
   costAxis: CostAxisKey,
   pareto: ParetoResult,
   color: string,
-  hollow: boolean,
+  theme: ChartTheme,
 ): ScatterPoint {
   const frontier = isOnFrontier(row, pareto)
   return {
     value: [priceForAxis(row, costAxis), row[metric] as number],
     name: row.cursorName,
     row,
-    // Hollow symbols (the `empty*` shapes) carry no fill — the shape is only
-    // ever visible via its stroke, so the border can't drop to 0 width the
-    // way the solid-symbol dominated state does below. `color` and
-    // `borderColor` both get the provider hue: inspecting actual rendered
-    // pixels showed this ECharts version does not consistently key the
-    // visible stroke off `borderColor` alone for `empty*` symbols, so both
-    // properties carry the same colour to guarantee whichever one it uses
-    // reads as the provider's colour, not a default.
-    itemStyle: hollow
-      ? {
-          color,
-          opacity: frontier ? 1 : DOMINATED_OPACITY,
-          borderColor: color,
-          borderWidth: frontier ? 2 : 1.5,
-        }
-      : {
-          color,
-          opacity: frontier ? 1 : DOMINATED_OPACITY,
-          borderColor: frontier ? '#ffffff' : color,
-          borderWidth: frontier ? 1.5 : 0,
-        },
+    // Provider identity lives in the fill colour; frontier membership lives in
+    // size plus a white ring. The two encodings are orthogonal, so colour is
+    // never asked to carry meaning it cannot hold.
+    itemStyle: {
+      color,
+      opacity: frontier ? 1 : DOMINATED_OPACITY,
+      borderColor: frontier ? theme.textPrimary : color,
+      borderWidth: frontier ? 1.5 : 0,
+    },
     symbolSize: frontier ? FRONTIER_SYMBOL_SIZE : DOMINATED_SYMBOL_SIZE,
     emphasis: {
       scale: 1.35,
@@ -102,23 +90,18 @@ export function buildCostScatterOption(
   const muted = theme.textMuted
 
   const series: EChartsOption['series'] = providers.map((provider) => {
-    const color = colorForProvider(provider, theme)
-    const symbol = symbolForProvider(provider)
-    const hollow = isHollowSymbol(symbol)
+    const color = colorForProvider(provider)
     const data = plottable
       .filter((row) => row.provider === provider)
-      .map((row) => scatterPoint(row, metric, costAxis, pareto, color, hollow))
+      .map((row) => scatterPoint(row, metric, costAxis, pareto, color, theme))
 
     return {
       name: provider,
       type: 'scatter',
       data,
-      symbol,
-      // Series-level itemStyle is also what the legend icon renders from, so
-      // the legend swatch matches the plotted points shape-for-shape and
-      // colour-for-colour, hollow or solid. Both colour properties carry the
-      // provider hue for hollow types — see the comment in scatterPoint().
-      itemStyle: hollow ? { color, borderColor: color, borderWidth: 1.5 } : { color },
+      // One mark shape for every provider — identity is colour, not glyph.
+      symbol: 'circle',
+      itemStyle: { color },
       emphasis: { focus: 'self' },
       cursor: 'pointer',
     }
@@ -134,7 +117,7 @@ export function buildCostScatterOption(
       type: 'line',
       data: frontierData,
       showSymbol: false,
-      lineStyle: { width: 2, color: muted, opacity: 0.55 },
+      lineStyle: { width: 2, color: theme.mint },
       tooltip: { show: false },
       legendHoverLink: false,
       silent: true,
@@ -156,9 +139,11 @@ export function buildCostScatterOption(
     tooltip: {
       trigger: 'item',
       confine: true,
-      backgroundColor: '#010409',
-      borderColor: theme.border,
-      textStyle: { color: theme.textPrimary, fontSize: 12 },
+      backgroundColor: theme.canvas,
+      borderColor: theme.mint,
+      padding: 12,
+      textStyle: { color: theme.textSecondary, fontSize: 12, fontFamily: theme.fontSans },
+      extraCssText: 'border-width: 1px;',
       formatter: (params: unknown) => {
         const point = (params as { data?: ScatterPoint }).data
         if (!point?.row) {
@@ -166,7 +151,7 @@ export function buildCostScatterOption(
         }
         const row = point.row
         return [
-          `<strong>${row.cursorName}</strong>`,
+          `<strong style="color:${theme.textPrimary}">${row.cursorName}</strong>`,
           row.provider,
           `Input: <b>$${row.priceInput}</b> / 1M tokens`,
           `Output: <b>$${row.priceOutput}</b> / 1M tokens`,
@@ -180,26 +165,27 @@ export function buildCostScatterOption(
       type: 'scroll',
       bottom: 0,
       data: legendData,
-      textStyle: { color: theme.textSecondary },
+      textStyle: { color: muted, fontSize: 11, fontFamily: theme.fontMono },
+      formatter: (name: string) => name.toUpperCase(),
     },
     xAxis: {
       type: 'log',
       name: COST_AXIS_LABELS[costAxis],
       nameLocation: 'middle',
       nameGap: 28,
-      nameTextStyle: { color: muted },
+      nameTextStyle: { color: muted, fontFamily: theme.fontSans },
       axisLine: { lineStyle: { color: muted } },
       axisTick: { show: false },
-      axisLabel: { color: muted },
-      splitLine: { lineStyle: { color: muted, opacity: 0.25 } },
+      axisLabel: { color: muted, fontSize: 10, fontFamily: theme.fontMono },
+      splitLine: { lineStyle: { color: muted, opacity: 0.2 } },
     },
     yAxis: {
       type: 'value',
       scale: true,
       axisLine: { lineStyle: { color: muted } },
       axisTick: { show: false },
-      axisLabel: { color: muted },
-      splitLine: { lineStyle: { color: muted, opacity: 0.25 } },
+      axisLabel: { color: muted, fontSize: 10, fontFamily: theme.fontMono },
+      splitLine: { lineStyle: { color: muted, opacity: 0.2 } },
     },
     series,
   }

@@ -1,104 +1,52 @@
-import type { ChartTheme } from './theme'
+import { relativeLuminance } from './paletteMath'
 
 /**
- * Provider keys normalised for palette lookup (opencode-aligned).
+ * Provider identity colours — one circle per series, colour is the encoding.
  *
- * Re-stepped from the original set, which measured worst all-pairs CVD ΔE 0.4
- * and normal-vision ΔE 2.3 (validate_palette.js, dark, --pairs all) — several
- * slots also read as grey (chroma below floor) or sat outside the dark
- * lightness band. At 17 categorical slots on an all-pairs form (this scatter),
- * no hue ordering clears the CVD/normal-vision separation floors — that is a
- * mathematical limit of carrying 17 identities in hue alone, not a fixable
- * palette-choice problem. Every hex below clears chroma floor, the dark
- * lightness band and contrast vs `--surface-1`; CVD and normal-vision
- * separation are expected to still fail at this count. `PROVIDER_SYMBOLS`
- * below is the secondary encoding that makes that legal: shape carries
- * identity where colour alone cannot (see
- * docs/forge/model-picker/plan-redesign.md D4).
+ * Seventeen categorical slots cannot clear strict all-pairs separation floors
+ * in hue alone; that is a limit of the space, not of any particular wheel. So
+ * the palette is built in OkLCh as THREE LIGHTNESS TIERS, hues ≥ 60° apart
+ * within a tier and staggered between tiers, chroma maxed per hue (capped at
+ * 0.20). Lightness survives colour-vision deficiency where hue collapses, so
+ * the tier structure is what keeps neighbours apart.
+ *
+ * Tier 1 (L 0.76) holds the six providers that actually co-appear in the
+ * bundled snapshot — they get the brightest slots and 60° hue spacing between
+ * each other. Tier 2 (L 0.63) and tier 3 (L 0.53) cover the remaining keys,
+ * which only ever meet in user-dropped snapshots.
+ *
+ * Enforced by providerColors.test.ts, not eyeballed: 17 distinct hexes, every
+ * colour ≥ 3:1 against the #131313 canvas, min pairwise OkLab ΔE ≥ 0.10, and
+ * ≥ 0.11 among the tier-1 six. For the record, the previous single-wheel
+ * palette measured min pairwise ΔE 0.040 (0.059 among the six) — the
+ * "colours look the same" complaint, quantified.
  */
 const PROVIDER_COLORS: Readonly<Record<string, string>> = {
-  anthropic: '#d7397b',
-  openai: '#de3a48',
-  google: '#db4600',
-  deepseek: '#ce5a00',
-  zai: '#b67000',
-  moonshot: '#938300',
-  minimax: '#5f9300',
-  alibaba: '#009e2d',
-  xai: '#00a36c',
-  nvidia: '#00a19c',
-  xiaomi: '#009ac4',
-  tencent: '#008ee2',
-  meta: '#007ef3',
-  mistral: '#636df4',
-  cursor: '#8f5de7',
-  stealth: '#af4fcc',
-  unknown: '#c742a7',
+  // tier 1 — co-appear in the bundled snapshot
+  anthropic: '#fb8d85',
+  moonshot: '#dba825',
+  openai: '#49d158',
+  zai: '#2bc7d6',
+  google: '#8db0fa',
+  cursor: '#ee7ef6',
+  // tier 2
+  minimax: '#cb6d1a',
+  nvidia: '#87921b',
+  alibaba: '#209f85',
+  meta: '#1e94ca',
+  deepseek: '#9568f3',
+  xai: '#df468f',
+  // tier 3
+  xiaomi: '#b34212',
+  mistral: '#6e7113',
+  unknown: '#177c71',
+  tencent: '#1369cb',
+  stealth: '#a530a4',
 }
 
-/**
- * ECharts symbol per provider — distinct shape as secondary identity.
- *
- * Only 9 of ECharts' built-in symbol names are used, not the full built-in
- * vocabulary: rendered and inspected pixel-by-pixel at actual legend/marker
- * size (Chrome, this app's ECharts version), `pin` and `arrow` both collapse
- * to a plain circle — `pin`'s point and `arrow`'s head are too fine to survive
- * at 12–16px, so a provider assigned `pin` becomes visually indistinguishable
- * from a genuine `circle` provider, silently defeating the whole point of a
- * shape encoding. `circle`, `triangle`, `diamond`, `rect` and `roundRect` were
- * each confirmed distinct at this size (`roundRect`'s corner radius reads
- * clearly next to `rect`'s sharp one); their hollow `empty*` counterparts
- * share the same path geometry so are trusted by construction.
- *
- * 9 shapes for 17 providers means 8 of them are reused once each (one shape —
- * `circle`, anthropic's — is left unique). Which key reuses which shape was
- * picked by exhaustive search over every valid pairing (never two providers
- * that can appear together in the bundled dataset, i.e. anthropic/cursor/
- * google/moonshot/openai/zai never share a shape with each other), maximising
- * the worst-case colour separation of every resulting pair: the search found
- * an assignment where every reused shape's pair clears the *target* CVD ΔE of
- * 8 (worst is 15.8, deepseek↔nvidia's shared `rect`) and the normal-vision
- * floor of 15 (worst is 26.6) — comfortably apart even before shape is
- * considered. Cursor and Google in particular are both shape-distinct
- * (emptyDiamond vs diamond — hollow vs filled) and colour-distant (ΔE 30.3
- * CVD / 30.7 normal) — they no longer read as "the same blue".
- */
-const PROVIDER_SYMBOLS: Readonly<Record<string, string>> = {
-  anthropic: 'circle',
-  openai: 'triangle',
-  google: 'diamond',
-  deepseek: 'rect',
-  zai: 'roundRect',
-  moonshot: 'emptyCircle',
-  minimax: 'emptyTriangle',
-  alibaba: 'emptyDiamond',
-  xai: 'emptyRect',
-  nvidia: 'rect',
-  xiaomi: 'triangle',
-  tencent: 'diamond',
-  meta: 'roundRect',
-  mistral: 'emptyCircle',
-  cursor: 'emptyDiamond',
-  stealth: 'emptyRect',
-  unknown: 'emptyTriangle',
-}
-
-/** The trusted shape vocabulary, for the hash fallback below (unmapped providers). */
-const SYMBOLS: readonly string[] = [
-  'circle',
-  'triangle',
-  'diamond',
-  'rect',
-  'roundRect',
-  'emptyCircle',
-  'emptyTriangle',
-  'emptyDiamond',
-  'emptyRect',
-]
-
-/** Hollow symbols carry colour only in their stroke — no fill to key off. */
-export function isHollowSymbol(symbol: string): boolean {
-  return symbol.startsWith('empty')
+/** Ink that stays legible on a provider colour: black on the bright tiers, white on the deep one. */
+export function textOnProvider(color: string): string {
+  return relativeLuminance(color) > 0.17 ? '#131313' : '#ffffff'
 }
 
 function normaliseProviderKey(provider: string): string {
@@ -118,23 +66,10 @@ function hashIndex(seed: string, length: number): number {
   return hash % length
 }
 
-function hashColor(seed: string, theme: ChartTheme): string {
-  const slot = hashIndex(seed, theme.series.length)
-  return theme.series[slot] ?? theme.series[0]!
-}
+const PALETTE_VALUES = Object.values(PROVIDER_COLORS)
 
-function hashSymbol(seed: string): string {
-  return SYMBOLS[hashIndex(seed, SYMBOLS.length)]!
-}
-
-/** Deterministic provider colour for charts and the data table. */
-export function colorForProvider(provider: string, theme: ChartTheme): string {
+/** Deterministic provider colour for chart marks and table pills. */
+export function colorForProvider(provider: string): string {
   const key = normaliseProviderKey(provider)
-  return PROVIDER_COLORS[key] ?? hashColor(key, theme)
-}
-
-/** Deterministic provider ECharts symbol — shape half of the identity encoding. */
-export function symbolForProvider(provider: string): string {
-  const key = normaliseProviderKey(provider)
-  return PROVIDER_SYMBOLS[key] ?? hashSymbol(key)
+  return PROVIDER_COLORS[key] ?? PALETTE_VALUES[hashIndex(key, PALETTE_VALUES.length)]!
 }

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import type { ModelRow } from '@schema/snapshot'
 import type { ParetoResult } from '@domain/pareto'
 import { buildCostScatterOption } from './costScatterOption'
-import { CHART_THEME, type ChartTheme } from './theme'
+import { colorForProvider } from './providerColors'
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
@@ -204,20 +204,7 @@ describe('buildCostScatterOption', () => {
     expect((option.tooltip as { formatter?: unknown }).formatter).toBeTypeOf('function')
   })
 
-  test('11 — explicit theme: provider series use colorForProvider mapping', () => {
-    const custom: ChartTheme = {
-      ...CHART_THEME,
-      series: [
-        '#ff0000',
-        '#00ff00',
-        '#0000ff',
-        '#aaaaaa',
-        '#bbbbbb',
-        '#cccccc',
-        '#dddddd',
-        '#eeeeee',
-      ],
-    }
+  test('11 — provider series colours come from the provider palette, not the theme', () => {
     const local: ParetoResult = {
       frontier: [
         makeRow({ cursorName: 'F', provider: 'Anthropic', intelligence: 80, priceInput: 1 }),
@@ -225,8 +212,17 @@ describe('buildCostScatterOption', () => {
       dominated: [],
       excluded: [],
     }
-    const option = buildCostScatterOption(local, 'intelligence', 'input', false, custom)
+    const option = buildCostScatterOption(local, 'intelligence', 'input', false)
     const scatters = scatterSeries(option) as Array<{ itemStyle?: { color?: string } }>
-    expect(scatters[0]!.itemStyle?.color).toBe('#d7397b')
+    expect(scatters[0]!.itemStyle?.color).toBe(colorForProvider('Anthropic'))
+  })
+
+  test('12 — every scatter series uses the circle symbol regardless of provider', () => {
+    const option = buildCostScatterOption(pareto, 'intelligence', 'input', false)
+    const scatters = scatterSeries(option) as Array<{ symbol?: string }>
+    expect(scatters).toHaveLength(3)
+    for (const scatter of scatters) {
+      expect(scatter.symbol).toBe('circle')
+    }
   })
 })
