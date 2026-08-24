@@ -3,7 +3,7 @@ import type { CostAxisKey, MetricKey, ModelRow } from '@schema/snapshot'
 import type { ParetoResult } from '@domain/pareto'
 import { isOnFrontier } from '@domain/pareto'
 import { CHART_THEME, type ChartTheme } from './theme'
-import { colorForProvider } from './providerColors'
+import { colorForProvider, isHollowSymbol, symbolForProvider } from './providerColors'
 
 const DOMINATED_OPACITY = 0.5
 const FRONTIER_SYMBOL_SIZE = 16
@@ -53,18 +53,34 @@ function scatterPoint(
   costAxis: CostAxisKey,
   pareto: ParetoResult,
   color: string,
+  hollow: boolean,
 ): ScatterPoint {
   const frontier = isOnFrontier(row, pareto)
   return {
     value: [priceForAxis(row, costAxis), row[metric] as number],
     name: row.cursorName,
     row,
-    itemStyle: {
-      color,
-      opacity: frontier ? 1 : DOMINATED_OPACITY,
-      borderColor: frontier ? '#ffffff' : color,
-      borderWidth: frontier ? 1.5 : 0,
-    },
+    // Hollow symbols (the `empty*` shapes) carry no fill — the shape is only
+    // ever visible via its stroke, so the border can't drop to 0 width the
+    // way the solid-symbol dominated state does below. `color` and
+    // `borderColor` both get the provider hue: inspecting actual rendered
+    // pixels showed this ECharts version does not consistently key the
+    // visible stroke off `borderColor` alone for `empty*` symbols, so both
+    // properties carry the same colour to guarantee whichever one it uses
+    // reads as the provider's colour, not a default.
+    itemStyle: hollow
+      ? {
+          color,
+          opacity: frontier ? 1 : DOMINATED_OPACITY,
+          borderColor: color,
+          borderWidth: frontier ? 2 : 1.5,
+        }
+      : {
+          color,
+          opacity: frontier ? 1 : DOMINATED_OPACITY,
+          borderColor: frontier ? '#ffffff' : color,
+          borderWidth: frontier ? 1.5 : 0,
+        },
     symbolSize: frontier ? FRONTIER_SYMBOL_SIZE : DOMINATED_SYMBOL_SIZE,
     emphasis: {
       scale: 1.35,
@@ -87,15 +103,22 @@ export function buildCostScatterOption(
 
   const series: EChartsOption['series'] = providers.map((provider) => {
     const color = colorForProvider(provider, theme)
+    const symbol = symbolForProvider(provider)
+    const hollow = isHollowSymbol(symbol)
     const data = plottable
       .filter((row) => row.provider === provider)
-      .map((row) => scatterPoint(row, metric, costAxis, pareto, color))
+      .map((row) => scatterPoint(row, metric, costAxis, pareto, color, hollow))
 
     return {
       name: provider,
       type: 'scatter',
       data,
-      itemStyle: { color },
+      symbol,
+      // Series-level itemStyle is also what the legend icon renders from, so
+      // the legend swatch matches the plotted points shape-for-shape and
+      // colour-for-colour, hollow or solid. Both colour properties carry the
+      // provider hue for hollow types — see the comment in scatterPoint().
+      itemStyle: hollow ? { color, borderColor: color, borderWidth: 1.5 } : { color },
       emphasis: { focus: 'self' },
       cursor: 'pointer',
     }

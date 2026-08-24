@@ -227,6 +227,6 @@ describe('buildCostScatterOption', () => {
     }
     const option = buildCostScatterOption(local, 'intelligence', 'input', false, custom)
     const scatters = scatterSeries(option) as Array<{ itemStyle?: { color?: string } }>
-    expect(scatters[0]!.itemStyle?.color).toBe('#e07a5f')
+    expect(scatters[0]!.itemStyle?.color).toBe('#d7397b')
   })
 })
