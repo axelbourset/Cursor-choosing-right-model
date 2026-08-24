@@ -340,6 +340,8 @@ input {
 }
 
 /* ─── drop zone ──────────────────────────────────────────────────────────── */
+/* The dashed affordance is an interactive cue, not a clipped raised edge; it
+   follows border-radius on both paths (no clip-path is used). */
 .dropzone__target {
   display: flex;
   flex-direction: column;
@@ -347,10 +349,11 @@ input {
   gap: var(--sp-2);
   margin: var(--sp-6) 0 var(--sp-5);
   padding: var(--sp-6) var(--sp-4);
-  background: var(--surface);
-  border: 1.5px dashed var(--border-strong);
-  border-radius: calc(var(--radius) * 2);
-  color: var(--muted);
+  background: var(--surface-1);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-xl);
+  corner-shape: var(--corner);
+  color: var(--text-secondary);
   text-align: center;
   cursor: pointer;
   transition:
@@ -358,7 +361,8 @@ input {
     background 120ms;
 }
 
-.dropzone__target:hover {
+.dropzone__target:hover,
+.dropzone__target:focus-within {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
@@ -371,15 +375,18 @@ input {
   max-width: 34rem;
   margin: 0 auto;
   padding: var(--sp-4);
-  background: var(--surface-alt);
-  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner);
+  box-shadow: inset 0 0 0 1px var(--border);
   font-size: var(--step--1);
 }
 
 .dropzone__steps {
   margin: 0;
   padding-left: 1.35rem;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 .dropzone__steps li {
   margin-bottom: var(--sp-2);
@@ -393,38 +400,46 @@ input {
   margin: var(--sp-4) 0 0;
   padding-top: var(--sp-3);
   border-top: 1px solid var(--border);
-  color: var(--text);
+  color: var(--text-primary);
   font-weight: 520;
 }
 
 .dropzone__attribution {
   margin: var(--sp-2) 0 0;
-  color: var(--faint);
+  color: var(--text-muted);
   font-size: var(--step--1);
 }
 
 /* ─── notices ────────────────────────────────────────────────────────────── */
+/* Container edge is the inset ring (D2); the severity stripe is a second inset
+   shadow on the left, so no `border` property is used for either. */
 .notice {
   margin: var(--sp-4) 0;
   padding: var(--sp-3);
-  border: 1px solid var(--border-strong);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius);
-  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius-md);
+  corner-shape: var(--corner);
+  background: var(--surface-1);
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    inset 3px 0 0 var(--text-muted);
   font-size: var(--step--1);
 }
 
 .notice--error {
-  border-left-color: #c0533f;
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    inset 3px 0 0 var(--status-critical);
 }
 .notice p {
   margin: 0 0 var(--sp-2);
   font-weight: 560;
+  color: var(--text-primary);
 }
 .notice__list {
   margin: 0;
   padding-left: 1.35rem;
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 
 /* ─── footer ─────────────────────────────────────────────────────────────── */
