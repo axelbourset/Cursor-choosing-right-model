@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import type { ModelRow } from '@schema/snapshot'
 import type { ParetoResult } from '@domain/pareto'
 import { buildCostScatterOption } from './costScatterOption'
+import { CHART_THEME, type ChartTheme } from './theme'
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
@@ -133,5 +134,28 @@ describe('buildCostScatterOption', () => {
     const scatters = scatterSeries(option) as Array<{ data: Array<[number, number]> }>
     expect(scatters[0]!.data[0]).toEqual([1.0, 11])
     expect(scatters[1]!.data[0]).toEqual([2.0, 22])
+  })
+
+  test('10 — explicit theme: frontier uses series[0], dominated uses series[1], legend present', () => {
+    const custom: ChartTheme = {
+      ...CHART_THEME,
+      series: [
+        '#ff0000',
+        '#00ff00',
+        '#0000ff',
+        '#aaaaaa',
+        '#bbbbbb',
+        '#cccccc',
+        '#dddddd',
+        '#eeeeee',
+      ],
+    }
+    const option = buildCostScatterOption(pareto, 'intelligence', false, custom)
+    const scatters = scatterSeries(option) as Array<{ itemStyle?: { color?: string } }>
+    expect(scatters[0]!.itemStyle?.color).toBe('#ff0000')
+    expect(scatters[1]!.itemStyle?.color).toBe('#00ff00')
+    const legend = option.legend as { show?: boolean; data?: string[] } | undefined
+    expect(legend?.show).toBe(true)
+    expect(legend?.data).toEqual(['Frontier', 'Dominated'])
   })
 })

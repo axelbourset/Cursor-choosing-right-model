@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import type { ModelRow } from '@schema/snapshot'
 import { buildScoreBarOption } from './scoreBarOption'
+import { CHART_THEME, type ChartTheme } from './theme'
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
@@ -74,5 +75,25 @@ describe('buildScoreBarOption', () => {
     const option = buildScoreBarOption(threeRows, 'intelligence')
     const yAxis = option.yAxis as { type: string }
     expect(yAxis.type).toBe('category')
+  })
+
+  test('8 — explicit theme: bar series uses theme.series[0] and no legend', () => {
+    const custom: ChartTheme = {
+      ...CHART_THEME,
+      series: [
+        '#ff0000',
+        '#00ff00',
+        '#0000ff',
+        '#aaaaaa',
+        '#bbbbbb',
+        '#cccccc',
+        '#dddddd',
+        '#eeeeee',
+      ],
+    }
+    const option = buildScoreBarOption(threeRows, 'intelligence', custom)
+    const series = option.series as Array<{ itemStyle?: { color?: string } }>
+    expect(series[0]!.itemStyle?.color).toBe('#ff0000')
+    expect(option.legend).toBeUndefined()
   })
 })
