@@ -154,11 +154,13 @@ function walkBuiltFiles(dir: string, prefix = ''): string[] {
 }
 
 function listTrackedFiles(): string[] {
+  // `git ls-files` lists tracked paths, including files deleted in the worktree but not yet
+  // staged. Reading those throws ENOENT, so filter to what actually exists on disk.
   const output = execSync('git ls-files', { encoding: 'utf-8' }).trim()
   if (!output) {
     return []
   }
-  return output.split('\n')
+  return output.split('\n').filter((file) => existsSync(file))
 }
 
 const GUARD_SELF_PATHS = new Set(['scripts/guard-no-data.ts', 'scripts/guard-no-data.test.ts'])
