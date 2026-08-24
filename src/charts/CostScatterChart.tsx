@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import type { MetricKey, ModelRow } from '@schema/snapshot'
 import { METRIC_KEYS } from '@schema/snapshot'
-import { computePareto } from '@domain/pareto'
-import { selectForMetric, type Filters } from '@domain/selection'
+import { selectPlottable, type Filters } from '@domain/selection'
 import { buildCostScatterOption } from './costScatterOption'
 import { CoverageNote } from '../ui/CoverageNote'
 
@@ -31,10 +30,15 @@ export function CostScatterChart({
   onFrontierChange,
 }: CostScatterChartProps) {
   const chartRef = useRef<HTMLDivElement>(null)
-  const selection = selectForMetric(rows, metric, filters)
-  const pareto = computePareto(selection.visible, metric)
-  const shown = pareto.frontier.length + pareto.dominated.length
-  const option = buildCostScatterOption(pareto, metric, showFrontier)
+  const selection = selectPlottable(rows, metric, filters)
+  const chartPareto = filters.paretoOnly
+    ? {
+        frontier: selection.chartRows,
+        dominated: [],
+        excluded: selection.pareto.excluded,
+      }
+    : selection.pareto
+  const option = buildCostScatterOption(chartPareto, metric, showFrontier)
 
   useEffect(() => {
     const element = chartRef.current
@@ -79,9 +83,11 @@ export function CostScatterChart({
         />
         Show Pareto frontier line
       </label>
-      <CoverageNote shown={shown} total={selection.total} />
+      <CoverageNote shown={selection.shown} total={selection.total} />
       <p className="panel__legend" data-testid="frontier-legend">
-        {pareto.frontier.length} {pareto.frontier.length === 1 ? 'model' : 'models'} on the frontier
+        {selection.pareto.frontier.length}{' '}
+        {selection.pareto.frontier.length === 1 ? 'model' : 'models'} on the frontier
+        {filters.paretoOnly ? ' · chart and table show frontier only' : ''}
       </p>
       <div className="panel__chart" ref={chartRef} data-testid="cost-scatter-chart" />
     </section>

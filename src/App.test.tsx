@@ -99,7 +99,7 @@ describe('App', () => {
     expect(screen.queryByTestId('score-bar-chart')).not.toBeInTheDocument()
   })
 
-  test('2 — snapshot state ok with 5 rows: the table, both charts and the filter bar all render', () => {
+  test('2 — snapshot state ok with 5 rows: the table, scatter chart and filter bar render', () => {
     const models = Array.from({ length: 5 }, (_, index) =>
       makeRow({ cursorSlug: `model-${index}`, cursorName: `Model ${index}` }),
     )
@@ -107,9 +107,9 @@ describe('App', () => {
     render(<App />)
     expect(screen.getByRole('table', { name: 'Cursor models' })).toBeInTheDocument()
     expect(screen.getByTestId('cost-scatter-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('score-bar-chart')).toBeInTheDocument()
+    expect(screen.queryByTestId('score-bar-chart')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Provider')).toBeInTheDocument()
-    expect(screen.getByLabelText('include hidden')).toBeInTheDocument()
+    expect(screen.getByLabelText('Show hidden models')).toBeInTheDocument()
     expect(screen.getByLabelText('Pareto only')).toBeInTheDocument()
   })
 
@@ -148,25 +148,25 @@ describe('App', () => {
     expect(tbodyRows()).toHaveLength(2)
   })
 
-  test('6 — checking Pareto only: the table shows only frontier models for the currently selected metric', () => {
+  test('6 — checking Pareto only: the table and chart both shrink to frontier models', () => {
     const models = [
       makeRow({
         cursorSlug: 'frontier',
         cursorName: 'Frontier',
         intelligence: 90,
-        aaCostPerTask: 1.0,
+        priceInput: 1.0,
       }),
       makeRow({
         cursorSlug: 'dominated',
         cursorName: 'Dominated',
         intelligence: 70,
-        aaCostPerTask: 2.0,
+        priceInput: 2.0,
       }),
       makeRow({
         cursorSlug: 'also-dominated',
         cursorName: 'Also Dominated',
         intelligence: 60,
-        aaCostPerTask: 3.0,
+        priceInput: 3.0,
       }),
     ]
     mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
@@ -175,6 +175,7 @@ describe('App', () => {
     fireEvent.click(screen.getByLabelText('Pareto only'))
     expect(tbodyRows()).toHaveLength(1)
     expect(within(tbodyRows()[0]!).getAllByRole('cell')[0]).toHaveTextContent('Frontier')
+    expect(screen.getByText('1/3 shown')).toBeInTheDocument()
   })
 
   test('6b — switching the metric with Pareto only on: the table rows change', () => {
@@ -184,21 +185,21 @@ describe('App', () => {
         cursorName: 'Intel Frontier',
         intelligence: 90,
         coding: 30,
-        aaCostPerTask: 1.0,
+        priceInput: 1.0,
       }),
       makeRow({
         cursorSlug: 'coding-frontier',
         cursorName: 'Coding Frontier',
         intelligence: 60,
         coding: 90,
-        aaCostPerTask: 1.0,
+        priceInput: 1.0,
       }),
       makeRow({
         cursorSlug: 'dominated-both',
         cursorName: 'Dominated Both',
         intelligence: 50,
         coding: 50,
-        aaCostPerTask: 5.0,
+        priceInput: 5.0,
       }),
     ]
     mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
@@ -206,7 +207,7 @@ describe('App', () => {
     fireEvent.click(screen.getByLabelText('Pareto only'))
     expect(tbodyRows()).toHaveLength(1)
     expect(within(tbodyRows()[0]!).getAllByRole('cell')[0]).toHaveTextContent('Intel Frontier')
-    fireEvent.click(screen.getByRole('tab', { name: 'Coding' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Coding' }))
     expect(tbodyRows()).toHaveLength(1)
     expect(within(tbodyRows()[0]!).getAllByRole('cell')[0]).toHaveTextContent('Coding Frontier')
   })
@@ -220,12 +221,12 @@ describe('App', () => {
     mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
     render(<App />)
     expect(tbodyRows()).toHaveLength(3)
-    fireEvent.click(screen.getByLabelText('include hidden'))
+    fireEvent.click(screen.getByLabelText('Show hidden models'))
     expect(tbodyRows()).toHaveLength(2)
     expect(screen.queryByText('Hidden')).not.toBeInTheDocument()
   })
 
-  test('8 — DOM order: the scatter appears before the bar chart, which appears before the table', () => {
+  test('8 — DOM order: the scatter appears before the table', () => {
     mockSnapshotHook({
       kind: 'ok',
       source: 'local',
@@ -233,10 +234,8 @@ describe('App', () => {
     })
     render(<App />)
     const scatter = screen.getByTestId('cost-scatter-chart')
-    const bar = screen.getByTestId('score-bar-chart')
     const table = screen.getByRole('table', { name: 'Cursor models' })
-    expect(scatter.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(bar.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(scatter.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   test('9 — state ok: exactly one table is rendered', () => {

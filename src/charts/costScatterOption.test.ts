@@ -17,7 +17,7 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
     coding: 40,
     agentic: 30,
     aaCostPerTask: 1.0,
-    priceInput: 0.01,
+    priceInput: 1.0,
     priceOutput: 0.02,
     priceCacheRead: 0.003,
     priceCacheWrite: 0.004,
@@ -30,29 +30,28 @@ function scatterSeries(option: ReturnType<typeof buildCostScatterOption>) {
   return series.filter((s) => s.type === 'scatter')
 }
 
-function allSeriesData(option: ReturnType<typeof buildCostScatterOption>): unknown[] {
-  const series = option.series as Array<{ data: unknown[] }>
-  return series.flatMap((s) => s.data)
+function allScatterX(option: ReturnType<typeof buildCostScatterOption>): number[] {
+  const scatters = scatterSeries(option) as Array<{ data: Array<{ value: [number, number] }> }>
+  return scatters.flatMap((s) => s.data.map((point) => point.value[0]))
 }
 
 describe('buildCostScatterOption', () => {
   const frontier = [
-    makeRow({ cursorName: 'F1', intelligence: 60, aaCostPerTask: 1.0 }),
-    makeRow({ cursorName: 'F2', intelligence: 70, aaCostPerTask: 2.0 }),
+    makeRow({ cursorName: 'F1', provider: 'Anthropic', intelligence: 60, priceInput: 1.0 }),
+    makeRow({ cursorName: 'F2', provider: 'OpenAI', intelligence: 70, priceInput: 2.0 }),
   ]
   const dominated = [
-    makeRow({ cursorName: 'D1', intelligence: 40, aaCostPerTask: 3.0 }),
-    makeRow({ cursorName: 'D2', intelligence: 45, aaCostPerTask: 4.0 }),
-    makeRow({ cursorName: 'D3', intelligence: 42, aaCostPerTask: 5.0 }),
+    makeRow({ cursorName: 'D1', provider: 'Google', intelligence: 40, priceInput: 3.0 }),
+    makeRow({ cursorName: 'D2', provider: 'Anthropic', intelligence: 45, priceInput: 4.0 }),
+    makeRow({ cursorName: 'D3', provider: 'OpenAI', intelligence: 42, priceInput: 5.0 }),
   ]
   const pareto: ParetoResult = { frontier, dominated, excluded: [] }
 
-  test('1 — frontier 2, dominated 3: two scatter series with 2 and 3 points', () => {
+  test('1 — three providers: three scatter series with correct point counts', () => {
     const option = buildCostScatterOption(pareto, 'intelligence', false)
     const scatters = scatterSeries(option)
-    expect(scatters).toHaveLength(2)
-    expect(scatters[0]!.data).toHaveLength(2)
-    expect(scatters[1]!.data).toHaveLength(3)
+    expect(scatters).toHaveLength(3)
+    expect(scatters.map((s) => (s as { data: unknown[] }).data.length).sort()).toEqual([1, 2, 2])
   })
 
   test('2 — showFrontier: true: a line series exists', () => {
@@ -67,42 +66,49 @@ describe('buildCostScatterOption', () => {
     expect(series.some((s) => s.type === 'line')).toBe(false)
   })
 
-  test('4 — the option: xAxis.type === log', () => {
+  test('4 — the option: xAxis.type === log and names input token price', () => {
     const option = buildCostScatterOption(pareto, 'intelligence', false)
-    const xAxis = option.xAxis as { type: string }
+    const xAxis = option.xAxis as { type: string; name?: string }
     expect(xAxis.type).toBe('log')
+    expect(xAxis.name).toContain('1M input tokens')
   })
 
-  test('5 — excluded has 4 rows: none of them appears in any series', () => {
+  test('5 — excluded rows: never appear in scatter data', () => {
     const excluded = [
-      makeRow({ cursorName: 'E1', intelligence: 10, aaCostPerTask: null }),
-      makeRow({ cursorName: 'E2', intelligence: null, aaCostPerTask: 1.0 }),
-      makeRow({ cursorName: 'E3', intelligence: 20, aaCostPerTask: 0.5 }),
-      makeRow({ cursorName: 'E4', intelligence: 25, aaCostPerTask: 0.8 }),
+      makeRow({ cursorName: 'E1', intelligence: 10, priceInput: null }),
+      makeRow({ cursorName: 'E2', intelligence: null, priceInput: 1.0 }),
+      makeRow({ cursorName: 'E3', intelligence: 20, priceInput: 0 }),
     ]
     const result: ParetoResult = { frontier, dominated, excluded }
     const option = buildCostScatterOption(result, 'intelligence', true)
-    const data = allSeriesData(option)
+    const xs = allScatterX(option)
+    expect(xs).not.toContain(0)
     for (const row of excluded) {
-      const cost = row.aaCostPerTask
-      const score = row.intelligence
-      if (cost !== null && score !== null) {
-        expect(data).not.toContainEqual([cost, score])
+      if (row.priceInput !== null && row.intelligence !== null && row.priceInput > 0) {
+        expect(xs).not.toContain(row.priceInput)
       }
     }
-    expect(data).not.toContainEqual([null, 10])
-    expect(data).not.toContainEqual([1.0, null])
   })
 
-  test('6 — the dominated series: has lower opacity than the frontier series', () => {
-    const option = buildCostScatterOption(pareto, 'intelligence', false)
-    const scatters = scatterSeries(option) as Array<{ itemStyle?: { opacity?: number } }>
-    const frontierOpacity = scatters[0]!.itemStyle?.opacity ?? 1
-    const dominatedOpacity = scatters[1]!.itemStyle?.opacity ?? 1
-    expect(dominatedOpacity).toBeLessThan(frontierOpacity)
+  test('6 — dominated points: lower opacity than frontier in the same provider', () => {
+    const local: ParetoResult = {
+      frontier: [
+        makeRow({ cursorName: 'F', provider: 'Anthropic', intelligence: 80, priceInput: 1 }),
+      ],
+      dominated: [
+        makeRow({ cursorName: 'D', provider: 'Anthropic', intelligence: 40, priceInput: 3 }),
+      ],
+      excluded: [],
+    }
+    const option = buildCostScatterOption(local, 'intelligence', false)
+    const scatters = scatterSeries(option) as Array<{
+      data: Array<{ itemStyle?: { opacity?: number } }>
+    }>
+    const opacities = scatters[0]!.data.map((point) => point.itemStyle?.opacity ?? 1)
+    expect(Math.min(...opacities)).toBeLessThan(Math.max(...opacities))
   })
 
-  test('7 — the line series points: ordered ascending by cost', () => {
+  test('7 — frontier line points: ordered ascending by input price', () => {
     const option = buildCostScatterOption(pareto, 'intelligence', true)
     const series = option.series as Array<{ type: string; data: Array<[number, number]> }>
     const line = series.find((s) => s.type === 'line')
@@ -112,18 +118,18 @@ describe('buildCostScatterOption', () => {
     expect(costs).toEqual([1.0, 2.0])
   })
 
-  test('8 — empty ParetoResult: no throw, all series empty', () => {
+  test('8 — empty ParetoResult: no throw, legend hidden', () => {
     const empty: ParetoResult = { frontier: [], dominated: [], excluded: [] }
     const option = buildCostScatterOption(empty, 'intelligence', true)
-    const scatters = scatterSeries(option)
-    expect(scatters[0]!.data).toHaveLength(0)
-    expect(scatters[1]!.data).toHaveLength(0)
+    expect(scatterSeries(option)).toHaveLength(0)
+    const legend = option.legend as { show?: boolean } | undefined
+    expect(legend?.show).toBe(false)
   })
 
   test("9 — metric 'agentic': Y values come from agentic", () => {
     const rows = [
-      makeRow({ cursorName: 'F1', agentic: 11, aaCostPerTask: 1.0 }),
-      makeRow({ cursorName: 'D1', agentic: 22, aaCostPerTask: 2.0 }),
+      makeRow({ cursorName: 'F1', agentic: 11, priceInput: 1.0 }),
+      makeRow({ cursorName: 'D1', agentic: 22, priceInput: 2.0 }),
     ]
     const result: ParetoResult = {
       frontier: [rows[0]!],
@@ -131,12 +137,21 @@ describe('buildCostScatterOption', () => {
       excluded: [],
     }
     const option = buildCostScatterOption(result, 'agentic', false)
-    const scatters = scatterSeries(option) as Array<{ data: Array<[number, number]> }>
-    expect(scatters[0]!.data[0]).toEqual([1.0, 11])
-    expect(scatters[1]!.data[0]).toEqual([2.0, 22])
+    const scatters = scatterSeries(option) as Array<{ data: Array<{ value: [number, number] }> }>
+    const ys = scatters.flatMap((s) => s.data.map((point) => point.value[1]))
+    expect(ys).toEqual(expect.arrayContaining([11, 22]))
   })
 
-  test('10 — explicit theme: frontier uses series[0], dominated uses series[1], legend present', () => {
+  test('10 — legend lists providers and tooltip formatter is present', () => {
+    const option = buildCostScatterOption(pareto, 'intelligence', false)
+    const legend = option.legend as { show?: boolean; data?: string[] } | undefined
+    expect(legend?.show).toBe(true)
+    expect(legend?.data).toEqual(expect.arrayContaining(['Anthropic', 'Google', 'OpenAI']))
+    expect(option.tooltip).toBeDefined()
+    expect((option.tooltip as { formatter?: unknown }).formatter).toBeTypeOf('function')
+  })
+
+  test('11 — explicit theme: provider series use colorForProvider mapping', () => {
     const custom: ChartTheme = {
       ...CHART_THEME,
       series: [
@@ -150,12 +165,15 @@ describe('buildCostScatterOption', () => {
         '#eeeeee',
       ],
     }
-    const option = buildCostScatterOption(pareto, 'intelligence', false, custom)
+    const local: ParetoResult = {
+      frontier: [
+        makeRow({ cursorName: 'F', provider: 'Anthropic', intelligence: 80, priceInput: 1 }),
+      ],
+      dominated: [],
+      excluded: [],
+    }
+    const option = buildCostScatterOption(local, 'intelligence', false, custom)
     const scatters = scatterSeries(option) as Array<{ itemStyle?: { color?: string } }>
-    expect(scatters[0]!.itemStyle?.color).toBe('#ff0000')
-    expect(scatters[1]!.itemStyle?.color).toBe('#00ff00')
-    const legend = option.legend as { show?: boolean; data?: string[] } | undefined
-    expect(legend?.show).toBe(true)
-    expect(legend?.data).toEqual(['Frontier', 'Dominated'])
+    expect(scatters[0]!.itemStyle?.color).toBe('#e07a5f')
   })
 })

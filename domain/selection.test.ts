@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import type { ModelRow } from '@schema/snapshot'
 import * as pareto from './pareto'
-import { DEFAULT_FILTERS, selectForMetric, type Filters } from './selection'
+import { DEFAULT_FILTERS, selectForMetric, selectPlottable, type Filters } from './selection'
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
@@ -16,7 +16,7 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
     coding: 40,
     agentic: 30,
     aaCostPerTask: 1.0,
-    priceInput: 0.01,
+    priceInput: 1.0,
     priceOutput: 0.02,
     priceCacheRead: 0.003,
     priceCacheWrite: 0.004,
@@ -138,10 +138,10 @@ describe('selectForMetric', () => {
 
   test('10 — paretoOnly: true, 4 rows of which 2 are dominated for this metric', () => {
     const rows = [
-      makeRow({ cursorName: 'A', intelligence: 60, aaCostPerTask: 1 }),
-      makeRow({ cursorName: 'B', intelligence: 50, aaCostPerTask: 2 }),
-      makeRow({ cursorName: 'C', intelligence: 70, aaCostPerTask: 3 }),
-      makeRow({ cursorName: 'D', intelligence: 60, aaCostPerTask: 4 }),
+      makeRow({ cursorName: 'A', intelligence: 60, priceInput: 1 }),
+      makeRow({ cursorName: 'B', intelligence: 50, priceInput: 2 }),
+      makeRow({ cursorName: 'C', intelligence: 70, priceInput: 3 }),
+      makeRow({ cursorName: 'D', intelligence: 60, priceInput: 4 }),
     ]
     const filters: Filters = { ...DEFAULT_FILTERS, paretoOnly: true }
     const selection = selectForMetric(rows, 'intelligence', filters)
@@ -151,10 +151,10 @@ describe('selectForMetric', () => {
 
   test('11 — paretoOnly: true with a different metric', () => {
     const rows = [
-      makeRow({ cursorName: 'A', intelligence: 70, coding: 30, aaCostPerTask: 3 }),
-      makeRow({ cursorName: 'B', intelligence: 60, coding: 80, aaCostPerTask: 2 }),
-      makeRow({ cursorName: 'C', intelligence: 50, coding: 50, aaCostPerTask: 1 }),
-      makeRow({ cursorName: 'D', intelligence: 55, coding: 40, aaCostPerTask: 4 }),
+      makeRow({ cursorName: 'A', intelligence: 70, coding: 30, priceInput: 3 }),
+      makeRow({ cursorName: 'B', intelligence: 60, coding: 80, priceInput: 2 }),
+      makeRow({ cursorName: 'C', intelligence: 50, coding: 50, priceInput: 1 }),
+      makeRow({ cursorName: 'D', intelligence: 55, coding: 40, priceInput: 4 }),
     ]
     const filters: Filters = { ...DEFAULT_FILTERS, paretoOnly: true }
     const intel = selectForMetric(rows, 'intelligence', filters)
@@ -170,5 +170,36 @@ describe('selectForMetric', () => {
     selectForMetric(rows, 'intelligence', DEFAULT_FILTERS)
     expect(spy).not.toHaveBeenCalled()
     spy.mockRestore()
+  })
+})
+
+describe('selectPlottable', () => {
+  test('1 — paretoOnly: chartRows is frontier subset of plottable', () => {
+    const rows = [
+      makeRow({ cursorName: 'A', intelligence: 60, priceInput: 1 }),
+      makeRow({ cursorName: 'B', intelligence: 50, priceInput: 2 }),
+      makeRow({ cursorName: 'C', intelligence: 70, priceInput: 3 }),
+      makeRow({ cursorName: 'D', intelligence: 60, priceInput: 4 }),
+    ]
+    const all = selectPlottable(rows, 'intelligence', DEFAULT_FILTERS)
+    expect(all.plottable).toHaveLength(4)
+    expect(all.chartRows).toHaveLength(4)
+
+    const frontierOnly = selectPlottable(rows, 'intelligence', {
+      ...DEFAULT_FILTERS,
+      paretoOnly: true,
+    })
+    expect(frontierOnly.chartRows).toHaveLength(2)
+    expect(frontierOnly.shown).toBe(2)
+  })
+
+  test('2 — rows without input price are excluded from plottable', () => {
+    const rows = [
+      makeRow({ cursorSlug: 'a', priceInput: 1 }),
+      makeRow({ cursorSlug: 'b', priceInput: null }),
+    ]
+    const selection = selectPlottable(rows, 'intelligence', DEFAULT_FILTERS)
+    expect(selection.plottable).toHaveLength(1)
+    expect(selection.total).toBe(2)
   })
 })

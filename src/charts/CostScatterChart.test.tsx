@@ -27,7 +27,7 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
     coding: 40,
     agentic: 30,
     aaCostPerTask: 1.0,
-    priceInput: 0.01,
+    priceInput: 1.0,
     priceOutput: 0.02,
     priceCacheRead: 0.003,
     priceCacheWrite: 0.004,
@@ -37,10 +37,12 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
 
 function scatterXValues(): number[] {
   const lastCall = setOption.mock.calls.at(-1)
-  const option = lastCall?.[0] as { series: Array<{ type: string; data: Array<[number, number]> }> }
+  const option = lastCall?.[0] as {
+    series: Array<{ type: string; data: Array<{ value: [number, number] }> }>
+  }
   return option.series
     .filter((s) => s.type === 'scatter')
-    .flatMap((s) => s.data.map((point) => point[0]))
+    .flatMap((s) => s.data.map((point) => point.value[0]))
 }
 
 function frontierLegendCount(): number {
@@ -55,12 +57,12 @@ afterEach(() => {
 })
 
 describe('CostScatterChart', () => {
-  test('10 — 4 rows, 1 with null cost: the coverage note shows 3/4', () => {
+  test('10 — 4 rows, 1 with null input price: the coverage note shows 3/4', () => {
     const rows = [
-      makeRow({ cursorSlug: 'a', aaCostPerTask: 1.0 }),
-      makeRow({ cursorSlug: 'b', aaCostPerTask: 2.0 }),
-      makeRow({ cursorSlug: 'c', aaCostPerTask: null }),
-      makeRow({ cursorSlug: 'd', aaCostPerTask: 3.0 }),
+      makeRow({ cursorSlug: 'a', priceInput: 1.0 }),
+      makeRow({ cursorSlug: 'b', priceInput: 2.0 }),
+      makeRow({ cursorSlug: 'c', priceInput: null }),
+      makeRow({ cursorSlug: 'd', priceInput: 3.0 }),
     ]
     render(
       <CostScatterChart
@@ -75,12 +77,12 @@ describe('CostScatterChart', () => {
     expect(screen.getByText('3/4 shown')).toBeInTheDocument()
   })
 
-  test('10b — the same: the null-cost row is counted in total and excluded from the series', () => {
+  test('10b — the same: the null-price row is excluded from the series', () => {
     const rows = [
-      makeRow({ cursorSlug: 'a', aaCostPerTask: 1.0 }),
-      makeRow({ cursorSlug: 'b', aaCostPerTask: 2.0 }),
-      makeRow({ cursorSlug: 'c', aaCostPerTask: null }),
-      makeRow({ cursorSlug: 'd', aaCostPerTask: 3.0 }),
+      makeRow({ cursorSlug: 'a', priceInput: 1.0 }),
+      makeRow({ cursorSlug: 'b', priceInput: 2.0 }),
+      makeRow({ cursorSlug: 'c', priceInput: null }),
+      makeRow({ cursorSlug: 'd', priceInput: 3.0 }),
     ]
     render(
       <CostScatterChart
@@ -92,7 +94,6 @@ describe('CostScatterChart', () => {
         onFrontierChange={vi.fn()}
       />,
     )
-    expect(screen.getByText('3/4 shown')).toBeInTheDocument()
     expect(scatterXValues()).not.toContain(0)
     expect(scatterXValues()).toHaveLength(3)
   })
@@ -104,21 +105,21 @@ describe('CostScatterChart', () => {
         cursorSlug: 'a',
         intelligence: 90,
         coding: 20,
-        aaCostPerTask: 5.0,
+        priceInput: 5.0,
       }),
       makeRow({
         cursorName: 'B',
         cursorSlug: 'b',
         intelligence: 50,
         coding: 80,
-        aaCostPerTask: 1.0,
+        priceInput: 1.0,
       }),
       makeRow({
         cursorName: 'C',
         cursorSlug: 'c',
         intelligence: 70,
         coding: 50,
-        aaCostPerTask: 3.0,
+        priceInput: 3.0,
       }),
     ]
     const onMetricChange = vi.fn()
@@ -183,11 +184,11 @@ describe('CostScatterChart', () => {
     expect(checkbox).toBeChecked()
   })
 
-  test('14 — a row with null cost: never rendered at x=0', () => {
+  test('14 — a row with null input price: never rendered at x=0', () => {
     const rows = [
-      makeRow({ cursorSlug: 'a', aaCostPerTask: 1.5 }),
-      makeRow({ cursorSlug: 'b', aaCostPerTask: null }),
-      makeRow({ cursorSlug: 'c', aaCostPerTask: 2.5 }),
+      makeRow({ cursorSlug: 'a', priceInput: 1.5 }),
+      makeRow({ cursorSlug: 'b', priceInput: null }),
+      makeRow({ cursorSlug: 'c', priceInput: 2.5 }),
     ]
     render(
       <CostScatterChart

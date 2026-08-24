@@ -1,23 +1,23 @@
 import type { ModelRow, MetricKey } from '@schema/snapshot'
 
 export type ParetoResult = {
-  /** Rows on the frontier, ascending by cost. */
+  /** Rows on the frontier, ascending by input price. */
   readonly frontier: readonly ModelRow[]
   /** Rows considered but dominated. */
   readonly dominated: readonly ModelRow[]
-  /** Rows excluded because score or cost was null. */
+  /** Rows excluded because score or input price was null/zero. */
   readonly excluded: readonly ModelRow[]
 }
 
 function hasBothAxes(row: ModelRow, metric: MetricKey): boolean {
-  return row[metric] !== null && row.aaCostPerTask !== null
+  return row[metric] !== null && row.priceInput !== null && row.priceInput > 0
 }
 
 function dominates(a: ModelRow, b: ModelRow, metric: MetricKey): boolean {
   const aScore = a[metric] as number
   const bScore = b[metric] as number
-  const aCost = a.aaCostPerTask as number
-  const bCost = b.aaCostPerTask as number
+  const aCost = a.priceInput as number
+  const bCost = b.priceInput as number
 
   const scoreAtLeast = aScore >= bScore
   const costAtMost = aCost <= bCost
@@ -26,7 +26,7 @@ function dominates(a: ModelRow, b: ModelRow, metric: MetricKey): boolean {
   return scoreAtLeast && costAtMost && strictlyBetter
 }
 
-/** Maximises `metric`, minimises `aaCostPerTask`. */
+/** Maximises `metric`, minimises `priceInput` (USD per 1M tokens). */
 export function computePareto(rows: readonly ModelRow[], metric: MetricKey): ParetoResult {
   const excluded: ModelRow[] = []
   const eligible: ModelRow[] = []
@@ -51,7 +51,7 @@ export function computePareto(rows: readonly ModelRow[], metric: MetricKey): Par
     }
   }
 
-  frontier.sort((a, b) => (a.aaCostPerTask as number) - (b.aaCostPerTask as number))
+  frontier.sort((a, b) => (a.priceInput as number) - (b.priceInput as number))
 
   return { frontier, dominated, excluded }
 }

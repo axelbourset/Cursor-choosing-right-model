@@ -239,6 +239,32 @@ describe('ModelTable', () => {
     expect(cells[8]).toHaveTextContent('0.2')
   })
 
+  test('14 — search filters rows by model name', () => {
+    const { container } = render(
+      <ModelTable
+        rows={[
+          makeRow({ cursorSlug: 'a', cursorName: 'Claude Opus 5', provider: 'Anthropic' }),
+          makeRow({ cursorSlug: 'b', cursorName: 'GPT-5.6 Sol', provider: 'OpenAI' }),
+          makeRow({ cursorSlug: 'c', cursorName: 'Gemini 3.7', provider: 'Google' }),
+        ]}
+      />,
+    )
+    expect(tbodyRows(container)).toHaveLength(3)
+    fireEvent.change(screen.getByLabelText('Search models'), { target: { value: 'claude' } })
+    expect(tbodyRows(container)).toHaveLength(1)
+    expect(rowNames(container)).toEqual(['Claude Opus 5'])
+  })
+
+  test('15 — provider column shows a colour dot', () => {
+    render(
+      <ModelTable
+        rows={[makeRow({ provider: 'Anthropic', cursorName: 'Claude Opus 5', cursorSlug: 'opus' })]}
+      />,
+    )
+    const row = screen.getByText('Claude Opus 5').closest('tr')!
+    expect(row.querySelector('.provider-chip__dot')).not.toBeNull()
+  })
+
   test('13 — the table', () => {
     render(<ModelTable rows={[makeRow()]} />)
     const table = screen.getByRole('table')

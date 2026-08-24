@@ -1,8 +1,7 @@
 import './styles.css'
 import type { Snapshot } from '@schema/snapshot'
-import { applyFilters, selectForMetric } from '@domain/selection'
+import { selectPlottable } from '@domain/selection'
 import { CostScatterChart } from './charts/CostScatterChart'
-import { ScoreBarChart } from './charts/ScoreBarChart'
 import { SnapshotDropZone } from './snapshot/SnapshotDropZone'
 import { useSnapshot } from './snapshot/useSnapshot'
 import { ModelTable } from './table/ModelTable'
@@ -38,13 +37,16 @@ export default function App() {
   const rows = okResult?.snapshot.models ?? []
   const providers = [...new Set(rows.map((row) => row.provider))].sort()
 
-  const filteredRows = applyFilters(rows, state.filters)
-  const tableRows = state.filters.paretoOnly
-    ? selectForMetric(rows, state.metric, state.filters).visible
-    : filteredRows
+  const selection = selectPlottable(rows, state.metric, state.filters)
+  const tableRows = state.filters.paretoOnly ? selection.chartRows : selection.filtered
+  const hiddenCount = rows.filter((row) => row.hidden).length
 
   return (
     <div className="app-container">
+      <p className="masthead">
+        <span className="masthead__mark" aria-hidden="true" />
+        Cursor Model Picker
+      </p>
       <SnapshotDropZone
         result={snapshotHook.result}
         lastGood={snapshotHook.lastGood}
@@ -64,6 +66,7 @@ export default function App() {
             <FilterBar
               filters={state.filters}
               providers={providers}
+              hiddenCount={hiddenCount}
               onChange={(filters) => {
                 set({ filters })
               }}
@@ -80,15 +83,7 @@ export default function App() {
                 set({ showFrontier })
               }}
             />
-            <ScoreBarChart
-              rows={rows}
-              filters={state.filters}
-              metric={state.metric}
-              onMetricChange={(metric) => {
-                set({ metric })
-              }}
-            />
-            <div className="table-wrapper">
+            <div className="table-section-outer">
               <ModelTable rows={tableRows} />
             </div>
             <Footer />

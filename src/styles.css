@@ -155,6 +155,12 @@ input {
   accent-color: var(--accent);
 }
 
+.filter-bar__hint {
+  color: var(--text-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ─── panels ─────────────────────────────────────────────────────────────── */
 .panel {
   margin-top: var(--sp-5);
@@ -189,6 +195,7 @@ input {
 
 .coverage-note {
   margin-left: auto;
+  padding-left: var(--sp-4);
   color: var(--text-muted);
   font-size: var(--step--1);
   font-variant-numeric: tabular-nums;
@@ -249,20 +256,88 @@ input {
 }
 
 /* ─── data table ─────────────────────────────────────────────────────────── */
-/* The wrapper is the scroll container AND the rounded surface. With the
-   border-radius fallback (no clip-path), overflow:auto clips scrolled rows to
-   the rounded corners and position:sticky works normally inside it — both
-   fragilities are satisfied by avoiding clip-path here. The inset ring is the
-   1px edge (D2); the sticky header's own background covers the top ring. */
-.table-wrapper {
+.table-section-outer {
   margin-top: var(--sp-5);
-  max-height: 32rem;
-  overflow: auto;
+}
+
+.table-section {
   background: var(--surface-1);
   border: 0;
   border-radius: var(--radius-lg);
   corner-shape: var(--corner);
   box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* Scroll container is only the tbody region — toolbar stays fixed above it. */
+.table-wrapper {
+  max-height: 28rem;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+}
+
+.model-table-panel {
+  min-width: min(100%, 56rem);
+}
+
+.model-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.model-table-search {
+  display: flex;
+  flex: 1 1 14rem;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 12rem;
+}
+
+.model-table-search__label {
+  color: var(--text-secondary);
+  font-size: var(--step--1);
+  white-space: nowrap;
+}
+
+.model-table-search__input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text-primary);
+  font-size: var(--step--1);
+}
+
+.model-table-search__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.model-table-toolbar__count {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
+.provider-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.provider-chip__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
 }
 
 .model-table {
@@ -473,4 +548,272 @@ input {
   .table-wrapper {
     max-height: 24rem;
   }
+}
+
+/* ═══ design pass ═══════════════════════════════════════════════════════════
+   The first version read as grey-on-grey because nothing carried weight:
+   panels sat at 1.07:1 against the page, the accent appeared once, and every
+   type size was within 2px of its neighbour. This section fixes hierarchy. */
+
+/* Header: make the title the loudest thing on the page, and let the meta
+   recede properly instead of competing at near-equal weight. */
+.site-header {
+  align-items: last baseline;
+  margin-bottom: var(--sp-5);
+  padding-bottom: var(--sp-4);
+}
+
+.site-header__title {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  background: linear-gradient(180deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.site-header__meta {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Source banner: a live indicator instead of a bare line of text. */
+.source-banner {
+  gap: var(--sp-2);
+  background: linear-gradient(90deg, var(--accent-soft), transparent 70%);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.source-banner__dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--series-3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--series-3) 22%, transparent);
+}
+
+.source-banner__replace {
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.source-banner__replace input {
+  display: none;
+}
+.source-banner__replace:hover {
+  color: var(--accent);
+}
+
+/* Panels: a coloured top edge is what actually separates them from the page —
+   the surface step alone measures 1.07:1 and is invisible. */
+.panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--series-1), var(--series-3) 55%, transparent);
+  opacity: 0.85;
+}
+
+/* Controls row: stop the checkbox label colliding with the coverage note. */
+.panel__controls {
+  gap: var(--sp-4);
+  row-gap: var(--sp-2);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+/* Tabs: a real segmented control, not three bare buttons. */
+.tabs {
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.tab {
+  border-radius: var(--radius-full);
+  padding: var(--sp-1) var(--sp-4);
+  font-weight: 500;
+}
+
+.tab[aria-selected='true'] {
+  background: var(--accent);
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.tab[aria-selected='true']:hover {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* Legend line under the scatter: give the number presence. */
+.panel__legend {
+  padding-top: var(--sp-2);
+  color: var(--text-secondary);
+}
+
+.panel__legend strong {
+  color: var(--series-1);
+  font-weight: 600;
+}
+
+/* Table: the header should read as a header, and the first column as identity. */
+.model-table__th {
+  background: var(--surface-3);
+}
+
+.model-table__sort {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.model-table__td:first-child {
+  font-weight: 550;
+  color: var(--text-primary);
+}
+
+.model-table__td--num {
+  color: var(--text-secondary);
+}
+.model-table tbody tr:hover .model-table__td--num {
+  color: var(--text-primary);
+}
+
+/* Drop zone: this is the public site's first view — it should look deliberate. */
+.dropzone__target {
+  gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-5);
+  background:
+    radial-gradient(120% 140% at 50% 0%, var(--accent-soft), transparent 60%), var(--surface-1);
+  border-width: 2px;
+  font-size: var(--step-1);
+  font-weight: 550;
+  color: var(--text-secondary);
+}
+
+.dropzone__target input[type='file'] {
+  color: var(--text-muted);
+}
+.dropzone__steps li::marker {
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* ═══ empty state — the public site's first view ══════════════════════════════
+   Screenshotted and rebuilt: it had no branding (the header lived inside the
+   gated children), a raw `Browse… / No file selected.` control, a full-width
+   drop target above a narrow centred card, and the whole thing jammed into the
+   top third of the viewport. */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-5);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.masthead__mark {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--series-1), var(--series-3));
+}
+
+/* One column, matched widths, vertically settled instead of top-jammed. */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: min(8vh, var(--sp-6)) 0;
+}
+
+.dropzone__target {
+  width: 100%;
+  gap: var(--sp-2);
+  padding: var(--sp-6) var(--sp-5);
+}
+
+/* The native file input is visually replaced — the label is the control. */
+.dropzone__target input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dropzone__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--accent);
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.dropzone__headline {
+  font-size: var(--step-1);
+  font-weight: 620;
+  color: var(--text-primary);
+}
+
+.dropzone__sub {
+  font-size: var(--step--1);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.dropzone__browse {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dropzone__target:hover .dropzone__icon {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.dropzone__guide {
+  max-width: none;
+  width: 100%;
 }

@@ -40,6 +40,39 @@ export function applyFilters(rows: readonly ModelRow[], filters: Filters): reado
   return result
 }
 
+export type PlottableSelection = {
+  readonly filtered: readonly ModelRow[]
+  /** Rows with the active metric and a positive input price — eligible for the scatter. */
+  readonly plottable: readonly ModelRow[]
+  readonly pareto: ReturnType<typeof computePareto>
+  /** Rows actually drawn on the scatter (frontier only when `paretoOnly`). */
+  readonly chartRows: readonly ModelRow[]
+  readonly shown: number
+  readonly total: number
+}
+
+export function selectPlottable(
+  rows: readonly ModelRow[],
+  metric: MetricKey,
+  filters: Filters,
+): PlottableSelection {
+  const filtered = applyFilters(rows, filters)
+  const plottable = filtered.filter(
+    (row) => row[metric] !== null && row.priceInput !== null && row.priceInput > 0,
+  )
+  const pareto = computePareto(plottable, metric)
+  const chartRows = filters.paretoOnly ? pareto.frontier : plottable
+
+  return {
+    filtered,
+    plottable,
+    pareto,
+    chartRows,
+    shown: chartRows.length,
+    total: filtered.length,
+  }
+}
+
 export function selectForMetric(
   rows: readonly ModelRow[],
   metric: MetricKey,
@@ -59,7 +92,8 @@ export function selectForMetric(
     }
   }
 
-  const visible = filters.paretoOnly ? computePareto(withMetric, metric).frontier : withMetric
+  const plottable = withMetric.filter((row) => row.priceInput !== null && row.priceInput > 0)
+  const visible = filters.paretoOnly ? computePareto(plottable, metric).frontier : withMetric
 
   return {
     visible,
