@@ -15,7 +15,7 @@ describe('StatStrip', () => {
     expect(screen.getByText('6')).toBeInTheDocument()
     expect(screen.getByText('Plotted')).toBeInTheDocument()
     expect(screen.getByText('29/43')).toBeInTheDocument()
-    expect(screen.getByText('Frontier')).toBeInTheDocument()
+    expect(screen.getByText('Pareto')).toBeInTheDocument()
     expect(screen.getByText('4')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Snapshot statistics' })).toBeInTheDocument()
   })

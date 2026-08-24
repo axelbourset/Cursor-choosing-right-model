@@ -41,7 +41,7 @@ function Header({
 }) {
   return (
     <header className="site-header">
-      <p className="site-header__eyebrow">Benchmarks · Prices · Pareto Frontier</p>
+      <p className="site-header__eyebrow">Benchmarks · Prices · Pareto</p>
       <h1 className="site-header__title">Cursor Model Picker</h1>
       {loaded ? (
         <div className="site-header__meta-row">

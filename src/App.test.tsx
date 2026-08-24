@@ -109,7 +109,7 @@ describe('App', () => {
     expect(screen.getByTestId('cost-scatter-chart')).toBeInTheDocument()
     expect(screen.queryByTestId('score-bar-chart')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Provider')).toBeInTheDocument()
-    expect(screen.getByLabelText('Only frontier models')).toBeInTheDocument()
+    expect(screen.getByLabelText('Only Pareto models')).toBeInTheDocument()
   })
 
   test('3 — state ok: the footer attribution text is present', () => {
@@ -173,7 +173,7 @@ describe('App', () => {
     mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
     render(<App />)
     expect(tbodyRows()).toHaveLength(3)
-    fireEvent.click(screen.getByLabelText('Only frontier models'))
+    fireEvent.click(screen.getByLabelText('Only Pareto models'))
     expect(tbodyRows()).toHaveLength(1)
     expect(within(tbodyRows()[0]!).getAllByRole('cell')[0]).toHaveTextContent('Frontier')
     expect(screen.getByText('1/3 shown')).toBeInTheDocument()
@@ -205,7 +205,7 @@ describe('App', () => {
     ]
     mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
     render(<App />)
-    fireEvent.click(screen.getByLabelText('Only frontier models'))
+    fireEvent.click(screen.getByLabelText('Only Pareto models'))
     expect(tbodyRows()).toHaveLength(1)
     expect(within(tbodyRows()[0]!).getAllByRole('cell')[0]).toHaveTextContent('Intel Frontier')
     fireEvent.click(screen.getByRole('radio', { name: 'Coding' }))

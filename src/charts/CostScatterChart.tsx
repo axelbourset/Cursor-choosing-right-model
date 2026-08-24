@@ -135,29 +135,26 @@ export function CostScatterChart({
         <div className="toolbar-field">
           <label
             className="check"
-            title="Show only models on the Pareto frontier for the selected metric — best score for each price tier, and no model beats them on both price and score."
+            title="Show only Pareto models for the selected metric — best score for each price tier, and no model beats them on both price and score."
           >
             <input
               type="checkbox"
-              aria-label="Only frontier models"
+              aria-label="Only Pareto models"
               checked={filters.paretoOnly}
               onChange={(event) =>
                 onFiltersChange({ ...filters, paretoOnly: event.target.checked })
               }
             />
-            Only frontier models
+            Only Pareto models
           </label>
 
-          <label
-            className="check"
-            title="Draw a line connecting the Pareto frontier points on the chart."
-          >
+          <label className="check" title="Draw a line connecting the Pareto points on the chart.">
             <input
               type="checkbox"
               checked={showFrontier}
               onChange={(event) => onFrontierChange(event.target.checked)}
             />
-            Draw frontier line
+            Draw Pareto line
           </label>
         </div>
       </div>
@@ -165,8 +162,8 @@ export function CostScatterChart({
         <CoverageNote shown={selection.shown} total={selection.total} />
         <p className="panel__legend" data-testid="frontier-legend">
           {selection.pareto.frontier.length}{' '}
-          {selection.pareto.frontier.length === 1 ? 'model' : 'models'} on the frontier
-          {filters.paretoOnly ? ' · chart and table show frontier only' : ''}
+          {selection.pareto.frontier.length === 1 ? 'Pareto model' : 'Pareto models'}
+          {filters.paretoOnly ? ' · chart and table show Pareto only' : ''}
         </p>
       </div>
       <div className="panel__chart" ref={chartRef} data-testid="cost-scatter-chart" />

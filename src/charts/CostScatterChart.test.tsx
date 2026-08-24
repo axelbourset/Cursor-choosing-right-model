@@ -203,7 +203,7 @@ describe('CostScatterChart', () => {
         onFrontierChange={vi.fn()}
       />,
     )
-    const checkbox = screen.getByRole('checkbox', { name: 'Draw frontier line' })
+    const checkbox = screen.getByRole('checkbox', { name: 'Draw Pareto line' })
     expect(checkbox).toBeInTheDocument()
     expect(checkbox).toBeChecked()
   })

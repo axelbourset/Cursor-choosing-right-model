@@ -23,7 +23,7 @@ export function CostAxisHelp() {
         <p className="info-tip__title">Choosing a cost axis</p>
         <p>
           Each option uses Cursor&apos;s published <strong>$/1M tokens</strong> for that billing
-          category. The Pareto frontier recomputes when you switch.
+          category. The Pareto set recomputes when you switch.
         </p>
         <dl className="info-tip__list">
           <div className="info-tip__item">

@@ -35,7 +35,7 @@ export function StatStrip({ models, providers, shown, total, frontier }: StatStr
       value: `${shown}/${total}`,
       modifier: 'stat-tile--yellow',
     },
-    { key: 'frontier', label: 'Frontier', value: String(frontier), modifier: 'stat-tile--pink' },
+    { key: 'frontier', label: 'Pareto', value: String(frontier), modifier: 'stat-tile--pink' },
   ]
 
   return (

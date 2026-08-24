@@ -113,7 +113,7 @@ export function buildCostScatterOption(
       row[metric] as number,
     ])
     ;(series as Array<Record<string, unknown>>).push({
-      name: 'Pareto frontier',
+      name: 'Pareto',
       type: 'line',
       data: frontierData,
       showSymbol: false,
@@ -126,7 +126,7 @@ export function buildCostScatterOption(
   }
 
   const legendData =
-    showFrontier && pareto.frontier.length > 0 ? [...providers, 'Pareto frontier'] : providers
+    showFrontier && pareto.frontier.length > 0 ? [...providers, 'Pareto'] : providers
 
   return {
     grid: {
