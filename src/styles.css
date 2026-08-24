@@ -377,7 +377,8 @@ input {
   padding: var(--sp-4);
   background: var(--surface-2);
   border: 0;
-  border-radius: var(--radius-lg);
+  /* concentric with .dropzone__target (--radius-xl minus its horizontal padding --sp-4) */
+  border-radius: calc(var(--radius-xl) - var(--sp-4));
   corner-shape: var(--corner);
   box-shadow: inset 0 0 0 1px var(--border);
   font-size: var(--step--1);
