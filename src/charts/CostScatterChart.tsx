@@ -22,9 +22,11 @@ const COST_AXIS_LABELS: Record<CostAxisKey, string> = {
 type CostScatterChartProps = {
   readonly rows: readonly ModelRow[]
   readonly filters: Filters
+  readonly providers: readonly string[]
   readonly metric: MetricKey
   readonly costAxis: CostAxisKey
   readonly showFrontier: boolean
+  readonly onFiltersChange: (filters: Filters) => void
   readonly onMetricChange: (metric: MetricKey) => void
   readonly onCostAxisChange: (costAxis: CostAxisKey) => void
   readonly onFrontierChange: (show: boolean) => void
@@ -33,9 +35,11 @@ type CostScatterChartProps = {
 export function CostScatterChart({
   rows,
   filters,
+  providers,
   metric,
   costAxis,
   showFrontier,
+  onFiltersChange,
   onMetricChange,
   onCostAxisChange,
   onFrontierChange,
@@ -73,47 +77,85 @@ export function CostScatterChart({
 
   return (
     <section className="panel">
-      <div className="panel__controls cost-axis-control">
-        <label className="cost-axis-control__label" htmlFor="scatter-cost-axis">
-          X axis
+      <div className="panel__toolbar">
+        <div className="toolbar-field">
+          <label htmlFor="scatter-cost-axis">X axis</label>
+          <select
+            id="scatter-cost-axis"
+            className="toolbar-select"
+            value={costAxis}
+            onChange={(event) => onCostAxisChange(event.target.value as CostAxisKey)}
+          >
+            {COST_AXIS_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {COST_AXIS_LABELS[key]}
+              </option>
+            ))}
+          </select>
+          <CostAxisHelp />
+        </div>
+
+        <div className="toolbar-field" role="radiogroup" aria-label="Scatter Y axis metric">
+          <span>Y axis</span>
+          <div className="segmented__track">
+            {METRIC_KEYS.map((key) => (
+              <label className="segmented__option" key={key}>
+                <input
+                  type="radio"
+                  name="scatter-metric"
+                  checked={metric === key}
+                  onChange={() => onMetricChange(key)}
+                />
+                {METRIC_LABELS[key]}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <label className="toolbar-field">
+          Provider
+          <select
+            className="toolbar-select"
+            aria-label="Provider"
+            value={filters.provider ?? ''}
+            onChange={(event) => {
+              const value = event.target.value
+              onFiltersChange({ ...filters, provider: value === '' ? null : value })
+            }}
+          >
+            <option value="">All providers</option>
+            {providers.map((provider) => (
+              <option key={provider} value={provider}>
+                {provider}
+              </option>
+            ))}
+          </select>
         </label>
-        <select
-          id="scatter-cost-axis"
-          className="cost-axis-control__select"
-          value={costAxis}
-          onChange={(event) => onCostAxisChange(event.target.value as CostAxisKey)}
+
+        <label
+          className="check"
+          title="Show only models on the Pareto frontier for the selected metric — best score for each price tier, and no model beats them on both price and score."
         >
-          {COST_AXIS_KEYS.map((key) => (
-            <option key={key} value={key}>
-              {COST_AXIS_LABELS[key]}
-            </option>
-          ))}
-        </select>
-        <CostAxisHelp />
+          <input
+            type="checkbox"
+            aria-label="Pareto only"
+            checked={filters.paretoOnly}
+            onChange={(event) => onFiltersChange({ ...filters, paretoOnly: event.target.checked })}
+          />
+          Pareto only
+        </label>
+
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={showFrontier}
+            onChange={(event) => onFrontierChange(event.target.checked)}
+          />
+          Show Pareto frontier line
+        </label>
+
+        <CoverageNote shown={selection.shown} total={selection.total} />
       </div>
-      <div className="panel__controls radios" role="radiogroup" aria-label="Scatter Y axis metric">
-        <span className="cost-axis-control__label">Y axis</span>
-        {METRIC_KEYS.map((key) => (
-          <label className="radio" key={key}>
-            <input
-              type="radio"
-              name="scatter-metric"
-              checked={metric === key}
-              onChange={() => onMetricChange(key)}
-            />
-            {METRIC_LABELS[key]}
-          </label>
-        ))}
-      </div>
-      <label className="panel__controls check">
-        <input
-          type="checkbox"
-          checked={showFrontier}
-          onChange={(event) => onFrontierChange(event.target.checked)}
-        />
-        Show Pareto frontier line
-      </label>
-      <CoverageNote shown={selection.shown} total={selection.total} />
       <p className="panel__legend" data-testid="frontier-legend">
         {selection.pareto.frontier.length}{' '}
         {selection.pareto.frontier.length === 1 ? 'model' : 'models'} on the frontier

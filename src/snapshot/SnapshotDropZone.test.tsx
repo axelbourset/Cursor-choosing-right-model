@@ -48,26 +48,16 @@ function renderZone(
   options: {
     lastGood?: Snapshot | null
     onFile?: (file: File) => void
-    onUseLocal?: () => void
-    onClear?: () => void
     children?: React.ReactNode
   } = {},
 ) {
   const onFile = options.onFile ?? vi.fn()
-  const onUseLocal = options.onUseLocal ?? vi.fn()
-  const onClear = options.onClear ?? vi.fn()
   render(
-    <SnapshotDropZone
-      result={result}
-      lastGood={options.lastGood ?? null}
-      onFile={onFile}
-      onUseLocal={onUseLocal}
-      onClear={onClear}
-    >
+    <SnapshotDropZone result={result} lastGood={options.lastGood ?? null} onFile={onFile}>
       {options.children ?? <div>child content</div>}
     </SnapshotDropZone>,
   )
-  return { onFile, onUseLocal, onClear }
+  return { onFile }
 }
 
 afterEach(() => {
@@ -109,44 +99,12 @@ describe('SnapshotDropZone', () => {
     expect(screen.getByText(/npm run refresh/)).toBeInTheDocument()
   })
 
-  test('7 — ok dropped shows banner and use local file button', () => {
-    renderZone({
-      kind: 'ok',
-      snapshot: validSnapshot(),
-      source: 'dropped',
-    })
-    expect(screen.getByText(/dropped file/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /use local file/i })).toBeInTheDocument()
-  })
-
-  test('8 — ok local shows banner without use local file button', () => {
-    renderZone({
-      kind: 'ok',
-      snapshot: validSnapshot(),
-      source: 'local',
-    })
-    expect(screen.getByText(/local file/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /use local file/i })).not.toBeInTheDocument()
-  })
-
   test('9 — ok state renders children', () => {
     renderZone(
       { kind: 'ok', snapshot: validSnapshot(), source: 'local' },
       { children: <div>child content</div> },
     )
     expect(screen.getByText('child content')).toBeInTheDocument()
-  })
-
-  test('10 — ok state has clear data button', () => {
-    renderZone({ kind: 'ok', snapshot: validSnapshot(), source: 'local' })
-    expect(screen.getByRole('button', { name: /clear data/i })).toBeInTheDocument()
-  })
-
-  test('11 — clicking clear data calls onClear once', () => {
-    const onClear = vi.fn()
-    renderZone({ kind: 'ok', snapshot: validSnapshot(), source: 'local' }, { onClear })
-    fireEvent.click(screen.getByRole('button', { name: /clear data/i }))
-    expect(onClear).toHaveBeenCalledOnce()
   })
 
   test('12 — selecting a file calls onFile once', () => {

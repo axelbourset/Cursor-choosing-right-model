@@ -31,6 +31,7 @@ export function ModelTable({ rows }: ModelTableProps) {
 
   return (
     <div className="table-section">
+      <p className="table-section__subheading">Same selection as the chart</p>
       <div className="model-table-toolbar">
         <label className="model-table-search">
           <span className="model-table-search__label">Search</span>

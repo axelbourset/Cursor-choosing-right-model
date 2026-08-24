@@ -134,7 +134,7 @@ describe('App', () => {
     expect(screen.getByTestId('generated-at')).toHaveTextContent('2026-03-15T09:30:00.000Z')
   })
 
-  test('5 — selecting a provider in FilterBar: the table row count drops accordingly', () => {
+  test('5 — selecting a provider in the chart toolbar: the table row count drops accordingly', () => {
     const models = [
       makeRow({ cursorSlug: 'a', cursorName: 'A', provider: 'Alpha' }),
       makeRow({ cursorSlug: 'b', cursorName: 'B', provider: 'Alpha' }),
@@ -231,5 +231,51 @@ describe('App', () => {
     })
     render(<App />)
     expect(screen.getAllByRole('table')).toHaveLength(1)
+  })
+
+  // Moved from SnapshotDropZone.test.tsx (10, 11, 12, 13 below): provenance and the
+  // replace/use-local/clear controls now live in the header's meta row, not in a
+  // banner owned by SnapshotDropZone — same assertions, new home.
+  test('10 — ok dropped: header shows dropped-file label and a use local file button', () => {
+    mockSnapshotHook({
+      kind: 'ok',
+      source: 'dropped',
+      snapshot: makeSnapshot([makeRow()]),
+    })
+    render(<App />)
+    expect(screen.getByText(/dropped file/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /use local file/i })).toBeInTheDocument()
+  })
+
+  test('11 — ok local: header shows local-file label and no use local file button', () => {
+    mockSnapshotHook({
+      kind: 'ok',
+      source: 'local',
+      snapshot: makeSnapshot([makeRow()]),
+    })
+    render(<App />)
+    expect(screen.getByText(/local file/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /use local file/i })).not.toBeInTheDocument()
+  })
+
+  test('12 — ok state: header has a clear data button', () => {
+    mockSnapshotHook({
+      kind: 'ok',
+      source: 'local',
+      snapshot: makeSnapshot([makeRow()]),
+    })
+    render(<App />)
+    expect(screen.getByRole('button', { name: /clear data/i })).toBeInTheDocument()
+  })
+
+  test('13 — clicking clear data calls clear once', () => {
+    const clear = vi.fn()
+    mockSnapshotHook(
+      { kind: 'ok', source: 'local', snapshot: makeSnapshot([makeRow()]) },
+      { clear },
+    )
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /clear data/i }))
+    expect(clear).toHaveBeenCalledOnce()
   })
 })

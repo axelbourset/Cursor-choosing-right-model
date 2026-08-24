@@ -6,8 +6,6 @@ export type SnapshotDropZoneProps = {
   readonly result: LoadResult
   readonly lastGood: Snapshot | null
   readonly onFile: (file: File) => void
-  readonly onUseLocal: () => void
-  readonly onClear: () => void
   readonly children?: ReactNode
 }
 
@@ -83,55 +81,7 @@ function StaleContent({ found, expected }: { readonly found: number; readonly ex
   )
 }
 
-function OkBanner({
-  source,
-  onUseLocal,
-  onClear,
-  onFile,
-}: {
-  readonly source: 'dropped' | 'local'
-  readonly onUseLocal: () => void
-  readonly onClear: () => void
-  readonly onFile: (file: File) => void
-}) {
-  return (
-    <div className="source-banner">
-      <span className="source-banner__dot" aria-hidden="true" />
-      <p className="source-banner__label">
-        source: {source === 'dropped' ? 'dropped file' : 'local file'}
-      </p>
-      <label className="source-banner__replace">
-        replace
-        <input
-          type="file"
-          accept="application/json"
-          aria-label="Replace snapshot file"
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) onFile(file)
-          }}
-        />
-      </label>
-      {source === 'dropped' ? (
-        <button className="btn btn--ghost" type="button" onClick={onUseLocal}>
-          use local file
-        </button>
-      ) : null}
-      <button className="btn btn--ghost" type="button" onClick={onClear}>
-        clear data
-      </button>
-    </div>
-  )
-}
-
-export function SnapshotDropZone({
-  result,
-  lastGood,
-  onFile,
-  onUseLocal,
-  onClear,
-  children,
-}: SnapshotDropZoneProps) {
+export function SnapshotDropZone({ result, lastGood, onFile, children }: SnapshotDropZoneProps) {
   const showChildren = result.kind === 'ok' || (result.kind === 'invalid' && lastGood !== null)
 
   return (
@@ -141,14 +91,6 @@ export function SnapshotDropZone({
       {result.kind === 'invalid' ? <InvalidContent errors={result.errors} /> : null}
       {result.kind === 'stale' ? (
         <StaleContent found={result.found} expected={result.expected} />
-      ) : null}
-      {result.kind === 'ok' ? (
-        <OkBanner
-          source={result.source}
-          onUseLocal={onUseLocal}
-          onClear={onClear}
-          onFile={onFile}
-        />
       ) : null}
       {showChildren ? children : null}
     </div>

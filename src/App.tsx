@@ -1,22 +1,66 @@
 import './styles.css'
 import type { Snapshot } from '@schema/snapshot'
+import type { SnapshotSource } from './snapshot/loadSnapshot'
 import { selectPlottable } from '@domain/selection'
 import { CostScatterChart } from './charts/CostScatterChart'
 import { SnapshotDropZone } from './snapshot/SnapshotDropZone'
 import { useSnapshot } from './snapshot/useSnapshot'
 import { ModelTable } from './table/ModelTable'
-import { FilterBar } from './ui/FilterBar'
 import { useViewState } from './useViewState'
 
-function Header({ snapshot }: { readonly snapshot: Snapshot }) {
+type LoadedInfo = {
+  readonly snapshot: Snapshot
+  readonly source: SnapshotSource
+}
+
+function Header({
+  loaded,
+  onReplace,
+  onUseLocal,
+  onClear,
+}: {
+  readonly loaded: LoadedInfo | null
+  readonly onReplace: (file: File) => void
+  readonly onUseLocal: () => void
+  readonly onClear: () => void
+}) {
   return (
     <header className="site-header">
       <h1 className="site-header__title">Cursor Model Picker</h1>
-      <p className="site-header__meta" data-testid="generated-at">
-        {snapshot.generatedAt}
-      </p>
-      <p className="site-header__meta">{snapshot.models.length} models</p>
-      <p className="site-header__meta">AA index v{snapshot.source.aaIndexVersion}</p>
+      {loaded ? (
+        <div className="site-header__meta-row">
+          <p className="site-header__meta" data-testid="generated-at">
+            {loaded.snapshot.generatedAt}
+          </p>
+          <p className="site-header__meta">{loaded.snapshot.models.length} models</p>
+          <p className="site-header__meta">AA index v{loaded.snapshot.source.aaIndexVersion}</p>
+          <p className="site-header__meta">
+            {loaded.source === 'dropped' ? 'dropped file' : 'local file'}
+          </p>
+          <div className="site-header__actions">
+            <label className="site-header__action">
+              replace
+              <input
+                type="file"
+                accept="application/json"
+                aria-label="Replace snapshot file"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) onReplace(file)
+                }}
+              />
+            </label>
+            {loaded.source === 'dropped' ? (
+              <button className="site-header__action" type="button" onClick={onUseLocal}>
+                use local file
+              </button>
+            ) : null}
+            <button className="site-header__action" type="button" onClick={onClear}>
+              clear data
+            </button>
+          </div>
+        </div>
+      ) : null}
     </header>
   )
 }
@@ -41,14 +85,9 @@ export default function App() {
   const tableRows = state.filters.paretoOnly ? selection.chartRows : selection.filtered
   return (
     <div className="app-container">
-      <p className="masthead">
-        <span className="masthead__mark" aria-hidden="true" />
-        Cursor Model Picker
-      </p>
-      <SnapshotDropZone
-        result={snapshotHook.result}
-        lastGood={snapshotHook.lastGood}
-        onFile={(file) => {
+      <Header
+        loaded={okResult ? { snapshot: okResult.snapshot, source: okResult.source } : null}
+        onReplace={(file) => {
           void snapshotHook.acceptFile(file)
         }}
         onUseLocal={() => {
@@ -57,23 +96,26 @@ export default function App() {
         onClear={() => {
           void snapshotHook.clear()
         }}
+      />
+      <SnapshotDropZone
+        result={snapshotHook.result}
+        lastGood={snapshotHook.lastGood}
+        onFile={(file) => {
+          void snapshotHook.acceptFile(file)
+        }}
       >
         {okResult ? (
           <>
-            <Header snapshot={okResult.snapshot} />
-            <FilterBar
-              filters={state.filters}
-              providers={providers}
-              onChange={(filters) => {
-                set({ filters })
-              }}
-            />
             <CostScatterChart
               rows={rows}
               filters={state.filters}
+              providers={providers}
               metric={state.metric}
               costAxis={state.costAxis}
               showFrontier={state.showFrontier}
+              onFiltersChange={(filters) => {
+                set({ filters })
+              }}
               onMetricChange={(metric) => {
                 set({ metric })
               }}

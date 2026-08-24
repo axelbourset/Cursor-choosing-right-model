@@ -68,6 +68,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={rows}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -90,6 +92,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={rows}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -131,6 +135,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={rows}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -149,6 +155,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={rows}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="coding"
         costAxis="input"
         showFrontier={true}
@@ -165,6 +173,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={[makeRow()]}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -183,6 +193,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={[makeRow()]}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -206,6 +218,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={rows}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -223,6 +237,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={[makeRow()]}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -243,6 +259,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={[makeRow()]}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -265,6 +283,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={rows}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="input"
         showFrontier={true}
@@ -285,6 +305,8 @@ describe('CostScatterChart', () => {
       <CostScatterChart
         rows={rows}
         filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
         metric="intelligence"
         costAxis="output"
         showFrontier={true}
