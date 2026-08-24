@@ -7,7 +7,17 @@ export function CostAxisHelp() {
         aria-label="About cost axes"
         aria-describedby="cost-axis-help"
       >
-        <span aria-hidden="true">ⓘ</span>
+        <svg className="info-tip__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+          <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.75" />
+          <circle cx="10" cy="6.5" r="1.1" fill="currentColor" />
+          <path
+            d="M10 9.25v5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+          />
+        </svg>
       </button>
       <div id="cost-axis-help" role="tooltip" className="info-tip__popover">
         <p className="info-tip__title">Choosing a cost axis</p>
