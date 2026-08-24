@@ -8,6 +8,7 @@ import { fetchArtificialAnalysis } from './fetchArtificialAnalysis'
 import { fetchCursorMarkdown } from './fetchCursorMarkdown'
 import { fetchCursorPricingJson } from './fetchCursorPricingJson'
 import { fixtureTransport } from './fixtureTransport'
+import { loadRepoEnv } from './loadEnv'
 import { joinModels } from './join'
 import { parseCursorMarkdown } from './parseCursorMarkdown'
 import { buildReport } from './report'
@@ -76,6 +77,7 @@ const httpTransport: Transport = async (url, headers) => {
 }
 
 async function main(): Promise<void> {
+  const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..')
   const useFixture = process.argv.includes('--fixture')
 
   let apiKey: string
@@ -85,11 +87,11 @@ async function main(): Promise<void> {
   if (useFixture) {
     apiKey = 'fixture'
     minExpectedAaModels = 40
-    const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..')
     transport = fixtureTransport((relativePath) =>
       readFile(path.join(repoRoot, relativePath), 'utf-8'),
     )
   } else {
+    await loadRepoEnv(repoRoot)
     const key = process.env.AA_API_KEY
     if (!key || key === 'paste_your_key_here') {
       console.error('AA_API_KEY is required. Copy .env.example to .env and add your key.')
