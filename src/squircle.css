@@ -1,0 +1,50 @@
+/* ─── squircle utilities ────────────────────────────────────────────────────
+ * Native path (when `corner-shape` is supported): `border-radius` + `corner-shape`.
+ * Fallback path (the majority today — `corner-shape` is not Baseline): `border-radius`
+ * alone, which renders circular corners — the closest pure-CSS approximation of a
+ * superellipse(2) squircle. A responsive `clip-path: path("…")` is not possible in
+ * pure CSS because path coordinates are absolute, not relative to the box, so the
+ * fallback does not clip; the precise path generators in `squircle.ts` are available
+ * for any component that needs an exact clip-path on a known-size box.
+ *
+ * Per D2 the load-bearing edge is a 1px inset ring applied by components as
+ * `box-shadow: inset 0 0 0 1px var(--border)` — it survives both `border-radius`
+ * and `clip-path`, so it reads correctly on both paths. No outer `box-shadow` is
+ * used for edges (it would be clipped on a clip-path fallback).
+ */
+
+.sq-sm {
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner);
+}
+.sq-md {
+  border-radius: var(--radius-md);
+  corner-shape: var(--corner);
+}
+.sq-lg {
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner);
+}
+.sq-xl {
+  border-radius: var(--radius-xl);
+  corner-shape: var(--corner);
+}
+
+/* `--radius-full` is a stadium — no squircle, plain border-radius. */
+.sq-full {
+  border-radius: var(--radius-full);
+}
+
+/* Fallback: browsers without `corner-shape` ignore it and render `border-radius`
+ * as circular corners. The `@supports not` guard documents the branch and keeps
+ * the fallback explicit. No `box-shadow` lives in this branch — the inset ring is
+ * applied by components, where it works under both `border-radius` and `clip-path`. */
+@supports not (corner-shape: squircle) {
+  .sq-sm,
+  .sq-md,
+  .sq-lg,
+  .sq-xl,
+  .sq-full {
+    /* corner-shape is unsupported here; border-radius above already applies. */
+  }
+}
