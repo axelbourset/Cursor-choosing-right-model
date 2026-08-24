@@ -1,16 +1,18 @@
 import { useCallback, useState } from 'react'
-import type { MetricKey } from '@schema/snapshot'
+import type { CostAxisKey, MetricKey } from '@schema/snapshot'
 import { DEFAULT_FILTERS, type Filters } from '@domain/selection'
 
 export type ViewState = {
   readonly filters: Filters
   readonly metric: MetricKey
+  readonly costAxis: CostAxisKey
   readonly showFrontier: boolean
 }
 
 const INITIAL_STATE: ViewState = {
   filters: DEFAULT_FILTERS,
   metric: 'intelligence',
+  costAxis: 'input',
   showFrontier: true,
 }
 

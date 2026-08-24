@@ -248,3 +248,63 @@ describe('isOnFrontier', () => {
     expect(isOnFrontier(b, result)).toBe(false)
   })
 })
+
+describe('computePareto output cost axis', () => {
+  test('16 — output cost axis: A dominates B on output price', () => {
+    const a = makeRow({
+      cursorName: 'A',
+      intelligence: 60,
+      priceInput: 10.0,
+      priceOutput: 1.0,
+    })
+    const b = makeRow({
+      cursorName: 'B',
+      intelligence: 50,
+      priceInput: 1.0,
+      priceOutput: 2.0,
+    })
+    const result = computePareto([a, b], 'intelligence', 'output')
+    expect(rowNames(result.frontier)).toEqual(['A'])
+    expect(rowNames(result.dominated)).toEqual(['B'])
+  })
+
+  test('17 — output cost axis: frontier ordered ascending by priceOutput', () => {
+    const a = makeRow({
+      cursorName: 'A',
+      intelligence: 70,
+      priceInput: 3,
+      priceOutput: 30,
+    })
+    const b = makeRow({
+      cursorName: 'B',
+      intelligence: 60,
+      priceInput: 2,
+      priceOutput: 20,
+    })
+    const c = makeRow({
+      cursorName: 'C',
+      intelligence: 50,
+      priceInput: 1,
+      priceOutput: 10,
+    })
+    const result = computePareto([a, b, c], 'intelligence', 'output')
+    const costs = result.frontier.map((r) => r.priceOutput)
+    expect(costs).toEqual([10, 20, 30])
+  })
+
+  test('18 — cache read cost axis: excludes rows with null cache read price', () => {
+    const a = makeRow({
+      cursorName: 'A',
+      intelligence: 60,
+      priceCacheRead: 0.2,
+    })
+    const b = makeRow({
+      cursorName: 'B',
+      intelligence: 50,
+      priceCacheRead: null,
+    })
+    const result = computePareto([a, b], 'intelligence', 'cacheRead')
+    expect(rowNames(result.frontier)).toEqual(['A'])
+    expect(rowNames(result.excluded)).toEqual(['B'])
+  })
+})

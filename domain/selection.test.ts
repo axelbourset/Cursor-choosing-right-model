@@ -195,4 +195,24 @@ describe('selectPlottable', () => {
     expect(selection.plottable).toHaveLength(1)
     expect(selection.total).toBe(2)
   })
+
+  test('3 — output cost axis: rows without output price are excluded from plottable', () => {
+    const rows = [
+      makeRow({ cursorSlug: 'a', priceOutput: 2 }),
+      makeRow({ cursorSlug: 'b', priceOutput: null }),
+    ]
+    const selection = selectPlottable(rows, 'intelligence', DEFAULT_FILTERS, 'output')
+    expect(selection.plottable).toHaveLength(1)
+    expect(selection.total).toBe(2)
+  })
+
+  test('4 — cache read cost axis: rows without cache read price are excluded from plottable', () => {
+    const rows = [
+      makeRow({ cursorSlug: 'a', priceCacheRead: 0.2 }),
+      makeRow({ cursorSlug: 'b', priceCacheRead: null }),
+    ]
+    const selection = selectPlottable(rows, 'intelligence', DEFAULT_FILTERS, 'cacheRead')
+    expect(selection.plottable).toHaveLength(1)
+    expect(selection.total).toBe(2)
+  })
 })

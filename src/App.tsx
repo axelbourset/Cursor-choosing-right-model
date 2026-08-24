@@ -37,7 +37,7 @@ export default function App() {
   const rows = okResult?.snapshot.models ?? []
   const providers = [...new Set(rows.map((row) => row.provider))].sort()
 
-  const selection = selectPlottable(rows, state.metric, state.filters)
+  const selection = selectPlottable(rows, state.metric, state.filters, state.costAxis)
   const tableRows = state.filters.paretoOnly ? selection.chartRows : selection.filtered
   return (
     <div className="app-container">
@@ -72,9 +72,13 @@ export default function App() {
               rows={rows}
               filters={state.filters}
               metric={state.metric}
+              costAxis={state.costAxis}
               showFrontier={state.showFrontier}
               onMetricChange={(metric) => {
                 set({ metric })
+              }}
+              onCostAxisChange={(costAxis) => {
+                set({ costAxis })
               }}
               onFrontierChange={(showFrontier) => {
                 set({ showFrontier })

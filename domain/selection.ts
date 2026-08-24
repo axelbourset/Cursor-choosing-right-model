@@ -1,5 +1,21 @@
-import type { ModelRow, MetricKey } from '@schema/snapshot'
+import type { CostAxisKey, ModelRow, MetricKey } from '@schema/snapshot'
 import { computePareto } from './pareto'
+
+function priceForAxis(row: ModelRow, costAxis: CostAxisKey): number | null {
+  switch (costAxis) {
+    case 'input':
+      return row.priceInput
+    case 'output':
+      return row.priceOutput
+    case 'cacheRead':
+      return row.priceCacheRead
+  }
+}
+
+function hasPlottableCost(row: ModelRow, costAxis: CostAxisKey): boolean {
+  const price = priceForAxis(row, costAxis)
+  return price !== null && price > 0
+}
 
 export type Filters = {
   readonly provider: string | null
@@ -37,7 +53,7 @@ export function applyFilters(rows: readonly ModelRow[], filters: Filters): reado
 
 export type PlottableSelection = {
   readonly filtered: readonly ModelRow[]
-  /** Rows with the active metric and a positive input price — eligible for the scatter. */
+  /** Rows with the active metric and a positive cost on the active axis — eligible for the scatter. */
   readonly plottable: readonly ModelRow[]
   readonly pareto: ReturnType<typeof computePareto>
   /** Rows actually drawn on the scatter (frontier only when `paretoOnly`). */
@@ -50,12 +66,13 @@ export function selectPlottable(
   rows: readonly ModelRow[],
   metric: MetricKey,
   filters: Filters,
+  costAxis: CostAxisKey = 'input',
 ): PlottableSelection {
   const filtered = applyFilters(rows, filters)
   const plottable = filtered.filter(
-    (row) => row[metric] !== null && row.priceInput !== null && row.priceInput > 0,
+    (row) => row[metric] !== null && hasPlottableCost(row, costAxis),
   )
-  const pareto = computePareto(plottable, metric)
+  const pareto = computePareto(plottable, metric, costAxis)
   const chartRows = filters.paretoOnly ? pareto.frontier : plottable
 
   return {
@@ -72,6 +89,7 @@ export function selectForMetric(
   rows: readonly ModelRow[],
   metric: MetricKey,
   filters: Filters,
+  costAxis: CostAxisKey = 'input',
 ): Selection {
   const filtered = applyFilters(rows, filters)
   const total = filtered.length
@@ -87,8 +105,10 @@ export function selectForMetric(
     }
   }
 
-  const plottable = withMetric.filter((row) => row.priceInput !== null && row.priceInput > 0)
-  const visible = filters.paretoOnly ? computePareto(plottable, metric).frontier : withMetric
+  const plottable = withMetric.filter((row) => hasPlottableCost(row, costAxis))
+  const visible = filters.paretoOnly
+    ? computePareto(plottable, metric, costAxis).frontier
+    : withMetric
 
   return {
     visible,

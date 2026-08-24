@@ -57,6 +57,10 @@ export type Snapshot = z.infer<typeof snapshotSchema>
 export const METRIC_KEYS = ['intelligence', 'coding', 'agentic'] as const
 export type MetricKey = (typeof METRIC_KEYS)[number]
 
+/** Cost axis keys for the scatter chart X axis. */
+export const COST_AXIS_KEYS = ['input', 'output', 'cacheRead'] as const
+export type CostAxisKey = (typeof COST_AXIS_KEYS)[number]
+
 export const CURRENT_SCHEMA_VERSION = 1
 
 /** The dev-server URL for the local snapshot. Lives here so `vite.plugins.ts` and

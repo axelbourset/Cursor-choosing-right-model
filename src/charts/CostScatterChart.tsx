@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
-import type { MetricKey, ModelRow } from '@schema/snapshot'
-import { METRIC_KEYS } from '@schema/snapshot'
+import type { CostAxisKey, MetricKey, ModelRow } from '@schema/snapshot'
+import { COST_AXIS_KEYS, METRIC_KEYS } from '@schema/snapshot'
 import { selectPlottable, type Filters } from '@domain/selection'
 import { buildCostScatterOption } from './costScatterOption'
 import { CoverageNote } from '../ui/CoverageNote'
+import { CostAxisHelp } from '../ui/CostAxisHelp'
 
 const METRIC_LABELS: Record<MetricKey, string> = {
   intelligence: 'Intelligence',
@@ -12,12 +13,20 @@ const METRIC_LABELS: Record<MetricKey, string> = {
   agentic: 'Agentic',
 }
 
+const COST_AXIS_LABELS: Record<CostAxisKey, string> = {
+  input: 'Input price',
+  output: 'Output price',
+  cacheRead: 'Cache read price',
+}
+
 type CostScatterChartProps = {
   readonly rows: readonly ModelRow[]
   readonly filters: Filters
   readonly metric: MetricKey
+  readonly costAxis: CostAxisKey
   readonly showFrontier: boolean
   readonly onMetricChange: (metric: MetricKey) => void
+  readonly onCostAxisChange: (costAxis: CostAxisKey) => void
   readonly onFrontierChange: (show: boolean) => void
 }
 
@@ -25,12 +34,14 @@ export function CostScatterChart({
   rows,
   filters,
   metric,
+  costAxis,
   showFrontier,
   onMetricChange,
+  onCostAxisChange,
   onFrontierChange,
 }: CostScatterChartProps) {
   const chartRef = useRef<HTMLDivElement>(null)
-  const selection = selectPlottable(rows, metric, filters)
+  const selection = selectPlottable(rows, metric, filters, costAxis)
   const chartPareto = filters.paretoOnly
     ? {
         frontier: selection.chartRows,
@@ -38,7 +49,7 @@ export function CostScatterChart({
         excluded: selection.pareto.excluded,
       }
     : selection.pareto
-  const option = buildCostScatterOption(chartPareto, metric, showFrontier)
+  const option = buildCostScatterOption(chartPareto, metric, costAxis, showFrontier)
 
   useEffect(() => {
     const element = chartRef.current
@@ -62,7 +73,26 @@ export function CostScatterChart({
 
   return (
     <section className="panel">
+      <div className="panel__controls cost-axis-control">
+        <label className="cost-axis-control__label" htmlFor="scatter-cost-axis">
+          X axis
+        </label>
+        <select
+          id="scatter-cost-axis"
+          className="cost-axis-control__select"
+          value={costAxis}
+          onChange={(event) => onCostAxisChange(event.target.value as CostAxisKey)}
+        >
+          {COST_AXIS_KEYS.map((key) => (
+            <option key={key} value={key}>
+              {COST_AXIS_LABELS[key]}
+            </option>
+          ))}
+        </select>
+        <CostAxisHelp />
+      </div>
       <div className="panel__controls radios" role="radiogroup" aria-label="Scatter Y axis metric">
+        <span className="cost-axis-control__label">Y axis</span>
         {METRIC_KEYS.map((key) => (
           <label className="radio" key={key}>
             <input

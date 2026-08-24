@@ -1,5 +1,5 @@
 import type { EChartsOption } from 'echarts'
-import type { MetricKey, ModelRow } from '@schema/snapshot'
+import type { CostAxisKey, MetricKey, ModelRow } from '@schema/snapshot'
 import type { ParetoResult } from '@domain/pareto'
 import { isOnFrontier } from '@domain/pareto'
 import { CHART_THEME, type ChartTheme } from './theme'
@@ -8,6 +8,23 @@ import { colorForProvider } from './providerColors'
 const DOMINATED_OPACITY = 0.5
 const FRONTIER_SYMBOL_SIZE = 16
 const DOMINATED_SYMBOL_SIZE = 12
+
+const COST_AXIS_LABELS: Record<CostAxisKey, string> = {
+  input: 'Price per 1M input tokens (USD, log scale)',
+  output: 'Price per 1M output tokens (USD, log scale)',
+  cacheRead: 'Price per 1M cache-read tokens (USD, log scale)',
+}
+
+function priceForAxis(row: ModelRow, costAxis: CostAxisKey): number {
+  switch (costAxis) {
+    case 'input':
+      return row.priceInput as number
+    case 'output':
+      return row.priceOutput as number
+    case 'cacheRead':
+      return row.priceCacheRead as number
+  }
+}
 
 type ScatterPoint = {
   readonly value: [number, number]
@@ -33,12 +50,13 @@ function fmtScore(value: number | null): string {
 function scatterPoint(
   row: ModelRow,
   metric: MetricKey,
+  costAxis: CostAxisKey,
   pareto: ParetoResult,
   color: string,
 ): ScatterPoint {
   const frontier = isOnFrontier(row, pareto)
   return {
-    value: [row.priceInput as number, row[metric] as number],
+    value: [priceForAxis(row, costAxis), row[metric] as number],
     name: row.cursorName,
     row,
     itemStyle: {
@@ -59,6 +77,7 @@ function scatterPoint(
 export function buildCostScatterOption(
   pareto: ParetoResult,
   metric: MetricKey,
+  costAxis: CostAxisKey,
   showFrontier: boolean,
   theme: ChartTheme = CHART_THEME,
 ): EChartsOption {
@@ -70,7 +89,7 @@ export function buildCostScatterOption(
     const color = colorForProvider(provider, theme)
     const data = plottable
       .filter((row) => row.provider === provider)
-      .map((row) => scatterPoint(row, metric, pareto, color))
+      .map((row) => scatterPoint(row, metric, costAxis, pareto, color))
 
     return {
       name: provider,
@@ -84,7 +103,7 @@ export function buildCostScatterOption(
 
   if (showFrontier && pareto.frontier.length > 0) {
     const frontierData = pareto.frontier.map((row) => [
-      row.priceInput as number,
+      priceForAxis(row, costAxis),
       row[metric] as number,
     ])
     ;(series as Array<Record<string, unknown>>).push({
@@ -104,7 +123,13 @@ export function buildCostScatterOption(
     showFrontier && pareto.frontier.length > 0 ? [...providers, 'Pareto frontier'] : providers
 
   return {
-    grid: { containLabel: true, bottom: providers.length > 6 ? 56 : 40 },
+    grid: {
+      left: 56,
+      right: 24,
+      top: 28,
+      bottom: providers.length > 6 ? 104 : 88,
+      containLabel: true,
+    },
     tooltip: {
       trigger: 'item',
       confine: true,
@@ -121,6 +146,8 @@ export function buildCostScatterOption(
           `<strong>${row.cursorName}</strong>`,
           row.provider,
           `Input: <b>$${row.priceInput}</b> / 1M tokens`,
+          `Output: <b>$${row.priceOutput}</b> / 1M tokens`,
+          `Cache read: <b>$${row.priceCacheRead}</b> / 1M tokens`,
           `Intelligence: <b>${fmtScore(row.intelligence)}</b> · Coding: <b>${fmtScore(row.coding)}</b> · Agentic: <b>${fmtScore(row.agentic)}</b>`,
         ].join('<br/>')
       },
@@ -134,7 +161,7 @@ export function buildCostScatterOption(
     },
     xAxis: {
       type: 'log',
-      name: 'Price per 1M input tokens (USD, log scale)',
+      name: COST_AXIS_LABELS[costAxis],
       nameLocation: 'middle',
       nameGap: 28,
       nameTextStyle: { color: muted },
@@ -145,6 +172,7 @@ export function buildCostScatterOption(
     },
     yAxis: {
       type: 'value',
+      scale: true,
       axisLine: { lineStyle: { color: muted } },
       axisTick: { show: false },
       axisLabel: { color: muted },

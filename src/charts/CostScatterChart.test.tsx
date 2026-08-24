@@ -69,8 +69,10 @@ describe('CostScatterChart', () => {
         rows={rows}
         filters={DEFAULT_FILTERS}
         metric="intelligence"
+        costAxis="input"
         showFrontier={true}
         onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
       />,
     )
@@ -89,8 +91,10 @@ describe('CostScatterChart', () => {
         rows={rows}
         filters={DEFAULT_FILTERS}
         metric="intelligence"
+        costAxis="input"
         showFrontier={true}
         onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
       />,
     )
@@ -128,8 +132,10 @@ describe('CostScatterChart', () => {
         rows={rows}
         filters={DEFAULT_FILTERS}
         metric="intelligence"
+        costAxis="input"
         showFrontier={true}
         onMetricChange={onMetricChange}
+        onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
       />,
     )
@@ -144,8 +150,10 @@ describe('CostScatterChart', () => {
         rows={rows}
         filters={DEFAULT_FILTERS}
         metric="coding"
+        costAxis="input"
         showFrontier={true}
         onMetricChange={onMetricChange}
+        onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
       />,
     )
@@ -158,8 +166,10 @@ describe('CostScatterChart', () => {
         rows={[makeRow()]}
         filters={DEFAULT_FILTERS}
         metric="intelligence"
+        costAxis="input"
         showFrontier={true}
         onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
       />,
     )
@@ -174,8 +184,10 @@ describe('CostScatterChart', () => {
         rows={[makeRow()]}
         filters={DEFAULT_FILTERS}
         metric="intelligence"
+        costAxis="input"
         showFrontier={true}
         onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
       />,
     )
@@ -195,12 +207,92 @@ describe('CostScatterChart', () => {
         rows={rows}
         filters={DEFAULT_FILTERS}
         metric="intelligence"
+        costAxis="input"
         showFrontier={true}
         onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
       />,
     )
     expect(scatterXValues()).not.toContain(0)
     expect(scatterXValues()).toEqual(expect.arrayContaining([1.5, 2.5]))
+  })
+
+  test('15 — cost axis select offers Input, Output, and Cache read price', () => {
+    render(
+      <CostScatterChart
+        rows={[makeRow()]}
+        filters={DEFAULT_FILTERS}
+        metric="intelligence"
+        costAxis="input"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
+        onFrontierChange={vi.fn()}
+      />,
+    )
+    const select = screen.getByRole('combobox', { name: 'X axis' })
+    expect(select).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Input price' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Output price' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Cache read price' })).toBeInTheDocument()
+  })
+
+  test('15b — cost axis help trigger is present', () => {
+    render(
+      <CostScatterChart
+        rows={[makeRow()]}
+        filters={DEFAULT_FILTERS}
+        metric="intelligence"
+        costAxis="input"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
+        onFrontierChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'About cost axes' })).toBeInTheDocument()
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Choosing a cost axis')
+  })
+
+  test('16 — switching the X axis via select: plots priceOutput and calls onCostAxisChange', () => {
+    const rows = [
+      makeRow({ cursorSlug: 'a', priceInput: 1.0, priceOutput: 10.0 }),
+      makeRow({ cursorSlug: 'b', priceInput: 2.0, priceOutput: 20.0 }),
+    ]
+    const onCostAxisChange = vi.fn()
+    render(
+      <CostScatterChart
+        rows={rows}
+        filters={DEFAULT_FILTERS}
+        metric="intelligence"
+        costAxis="input"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={onCostAxisChange}
+        onFrontierChange={vi.fn()}
+      />,
+    )
+    expect(scatterXValues()).toEqual(expect.arrayContaining([1.0, 2.0]))
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'X axis' }), {
+      target: { value: 'output' },
+    })
+    expect(onCostAxisChange).toHaveBeenCalledWith('output')
+
+    cleanup()
+    render(
+      <CostScatterChart
+        rows={rows}
+        filters={DEFAULT_FILTERS}
+        metric="intelligence"
+        costAxis="output"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={onCostAxisChange}
+        onFrontierChange={vi.fn()}
+      />,
+    )
+    expect(scatterXValues()).toEqual(expect.arrayContaining([10.0, 20.0]))
   })
 })

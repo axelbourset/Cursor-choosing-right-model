@@ -48,29 +48,82 @@ describe('buildCostScatterOption', () => {
   const pareto: ParetoResult = { frontier, dominated, excluded: [] }
 
   test('1 — three providers: three scatter series with correct point counts', () => {
-    const option = buildCostScatterOption(pareto, 'intelligence', false)
+    const option = buildCostScatterOption(pareto, 'intelligence', 'input', false)
     const scatters = scatterSeries(option)
     expect(scatters).toHaveLength(3)
     expect(scatters.map((s) => (s as { data: unknown[] }).data.length).sort()).toEqual([1, 2, 2])
   })
 
   test('2 — showFrontier: true: a line series exists', () => {
-    const option = buildCostScatterOption(pareto, 'intelligence', true)
+    const option = buildCostScatterOption(pareto, 'intelligence', 'input', true)
     const series = option.series as Array<{ type: string }>
     expect(series.some((s) => s.type === 'line')).toBe(true)
   })
 
   test('3 — showFrontier: false: no line series', () => {
-    const option = buildCostScatterOption(pareto, 'intelligence', false)
+    const option = buildCostScatterOption(pareto, 'intelligence', 'input', false)
     const series = option.series as Array<{ type: string }>
     expect(series.some((s) => s.type === 'line')).toBe(false)
   })
 
   test('4 — the option: xAxis.type === log and names input token price', () => {
-    const option = buildCostScatterOption(pareto, 'intelligence', false)
+    const option = buildCostScatterOption(pareto, 'intelligence', 'input', false)
     const xAxis = option.xAxis as { type: string; name?: string }
     expect(xAxis.type).toBe('log')
     expect(xAxis.name).toContain('1M input tokens')
+  })
+
+  test('4b — output cost axis: xAxis names output token price', () => {
+    const option = buildCostScatterOption(pareto, 'intelligence', 'output', false)
+    const xAxis = option.xAxis as { name?: string }
+    expect(xAxis.name).toContain('1M output tokens')
+  })
+
+  test('4c — output cost axis: scatter X values use priceOutput', () => {
+    const rows = [
+      makeRow({ cursorName: 'F1', intelligence: 60, priceInput: 1.0, priceOutput: 10.0 }),
+      makeRow({ cursorName: 'D1', intelligence: 40, priceInput: 3.0, priceOutput: 30.0 }),
+    ]
+    const result: ParetoResult = {
+      frontier: [rows[0]!],
+      dominated: [rows[1]!],
+      excluded: [],
+    }
+    const option = buildCostScatterOption(result, 'intelligence', 'output', false)
+    expect(allScatterX(option)).toEqual(expect.arrayContaining([10.0, 30.0]))
+    expect(allScatterX(option)).not.toEqual(expect.arrayContaining([1.0, 3.0]))
+  })
+
+  test('4d — cache read cost axis: xAxis names cache-read token price', () => {
+    const option = buildCostScatterOption(pareto, 'intelligence', 'cacheRead', false)
+    const xAxis = option.xAxis as { name?: string }
+    expect(xAxis.name).toContain('cache-read')
+  })
+
+  test('4e — cache read cost axis: scatter X values use priceCacheRead', () => {
+    const rows = [
+      makeRow({
+        cursorName: 'F1',
+        intelligence: 60,
+        priceInput: 1.0,
+        priceOutput: 10.0,
+        priceCacheRead: 0.1,
+      }),
+      makeRow({
+        cursorName: 'D1',
+        intelligence: 40,
+        priceInput: 3.0,
+        priceOutput: 30.0,
+        priceCacheRead: 0.3,
+      }),
+    ]
+    const result: ParetoResult = {
+      frontier: [rows[0]!],
+      dominated: [rows[1]!],
+      excluded: [],
+    }
+    const option = buildCostScatterOption(result, 'intelligence', 'cacheRead', false)
+    expect(allScatterX(option)).toEqual(expect.arrayContaining([0.1, 0.3]))
   })
 
   test('5 — excluded rows: never appear in scatter data', () => {
@@ -80,7 +133,7 @@ describe('buildCostScatterOption', () => {
       makeRow({ cursorName: 'E3', intelligence: 20, priceInput: 0 }),
     ]
     const result: ParetoResult = { frontier, dominated, excluded }
-    const option = buildCostScatterOption(result, 'intelligence', true)
+    const option = buildCostScatterOption(result, 'intelligence', 'input', true)
     const xs = allScatterX(option)
     expect(xs).not.toContain(0)
     for (const row of excluded) {
@@ -100,7 +153,7 @@ describe('buildCostScatterOption', () => {
       ],
       excluded: [],
     }
-    const option = buildCostScatterOption(local, 'intelligence', false)
+    const option = buildCostScatterOption(local, 'intelligence', 'input', false)
     const scatters = scatterSeries(option) as Array<{
       data: Array<{ itemStyle?: { opacity?: number } }>
     }>
@@ -109,7 +162,7 @@ describe('buildCostScatterOption', () => {
   })
 
   test('7 — frontier line points: ordered ascending by input price', () => {
-    const option = buildCostScatterOption(pareto, 'intelligence', true)
+    const option = buildCostScatterOption(pareto, 'intelligence', 'input', true)
     const series = option.series as Array<{ type: string; data: Array<[number, number]> }>
     const line = series.find((s) => s.type === 'line')
     expect(line).toBeDefined()
@@ -120,7 +173,7 @@ describe('buildCostScatterOption', () => {
 
   test('8 — empty ParetoResult: no throw, legend hidden', () => {
     const empty: ParetoResult = { frontier: [], dominated: [], excluded: [] }
-    const option = buildCostScatterOption(empty, 'intelligence', true)
+    const option = buildCostScatterOption(empty, 'intelligence', 'input', true)
     expect(scatterSeries(option)).toHaveLength(0)
     const legend = option.legend as { show?: boolean } | undefined
     expect(legend?.show).toBe(false)
@@ -136,14 +189,14 @@ describe('buildCostScatterOption', () => {
       dominated: [rows[1]!],
       excluded: [],
     }
-    const option = buildCostScatterOption(result, 'agentic', false)
+    const option = buildCostScatterOption(result, 'agentic', 'input', false)
     const scatters = scatterSeries(option) as Array<{ data: Array<{ value: [number, number] }> }>
     const ys = scatters.flatMap((s) => s.data.map((point) => point.value[1]))
     expect(ys).toEqual(expect.arrayContaining([11, 22]))
   })
 
   test('10 — legend lists providers and tooltip formatter is present', () => {
-    const option = buildCostScatterOption(pareto, 'intelligence', false)
+    const option = buildCostScatterOption(pareto, 'intelligence', 'input', false)
     const legend = option.legend as { show?: boolean; data?: string[] } | undefined
     expect(legend?.show).toBe(true)
     expect(legend?.data).toEqual(expect.arrayContaining(['Anthropic', 'Google', 'OpenAI']))
@@ -172,7 +225,7 @@ describe('buildCostScatterOption', () => {
       dominated: [],
       excluded: [],
     }
-    const option = buildCostScatterOption(local, 'intelligence', false, custom)
+    const option = buildCostScatterOption(local, 'intelligence', 'input', false, custom)
     const scatters = scatterSeries(option) as Array<{ itemStyle?: { color?: string } }>
     expect(scatters[0]!.itemStyle?.color).toBe('#e07a5f')
   })
