@@ -109,7 +109,6 @@ describe('App', () => {
     expect(screen.getByTestId('cost-scatter-chart')).toBeInTheDocument()
     expect(screen.queryByTestId('score-bar-chart')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Provider')).toBeInTheDocument()
-    expect(screen.getByLabelText('Show hidden models')).toBeInTheDocument()
     expect(screen.getByLabelText('Pareto only')).toBeInTheDocument()
   })
 
@@ -210,20 +209,6 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Coding' }))
     expect(tbodyRows()).toHaveLength(1)
     expect(within(tbodyRows()[0]!).getAllByRole('cell')[0]).toHaveTextContent('Coding Frontier')
-  })
-
-  test('7 — unchecking include hidden: rows with hidden true disappear', () => {
-    const models = [
-      makeRow({ cursorSlug: 'visible-a', cursorName: 'Visible A', hidden: false }),
-      makeRow({ cursorSlug: 'visible-b', cursorName: 'Visible B', hidden: false }),
-      makeRow({ cursorSlug: 'hidden', cursorName: 'Hidden', hidden: true }),
-    ]
-    mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
-    render(<App />)
-    expect(tbodyRows()).toHaveLength(3)
-    fireEvent.click(screen.getByLabelText('Show hidden models'))
-    expect(tbodyRows()).toHaveLength(2)
-    expect(screen.queryByText('Hidden')).not.toBeInTheDocument()
   })
 
   test('8 — DOM order: the scatter appears before the table', () => {

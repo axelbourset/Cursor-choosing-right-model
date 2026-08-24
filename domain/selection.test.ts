@@ -61,15 +61,15 @@ describe('selectForMetric', () => {
     assertInvariant(selection)
   })
 
-  test('3 — 5 rows, 3 hidden, includeHidden: false', () => {
+  test('3 — 5 rows including hidden models: all remain visible', () => {
     const rows = makeFiveRows()
-    const filters: Filters = { ...DEFAULT_FILTERS, includeHidden: false }
-    const selection = selectForMetric(rows, 'intelligence', filters)
-    expect(selection.total).toBe(2)
+    const selection = selectForMetric(rows, 'intelligence', DEFAULT_FILTERS)
+    expect(selection.total).toBe(5)
+    expect(selection.shown).toBe(5)
     assertInvariant(selection)
   })
 
-  test('4 — as #3 but 1 of the 2 visible lacks coding', () => {
+  test('4 — 5 rows, 2 visible Anthropic, 1 lacks coding', () => {
     const rows = [
       makeRow({ cursorSlug: 'a', provider: 'Anthropic' }),
       makeRow({ cursorSlug: 'b', provider: 'Anthropic', coding: null }),
@@ -77,10 +77,9 @@ describe('selectForMetric', () => {
       makeRow({ cursorSlug: 'd', provider: 'Google', hidden: true }),
       makeRow({ cursorSlug: 'e', provider: 'Google', hidden: true }),
     ]
-    const filters: Filters = { ...DEFAULT_FILTERS, includeHidden: false }
-    const selection = selectForMetric(rows, 'coding', filters)
-    expect(selection.shown).toBe(1)
-    expect(selection.total).toBe(2)
+    const selection = selectForMetric(rows, 'coding', DEFAULT_FILTERS)
+    expect(selection.shown).toBe(4)
+    expect(selection.total).toBe(5)
     assertInvariant(selection)
   })
 
@@ -106,11 +105,6 @@ describe('selectForMetric', () => {
     const cases: Array<{ metric: 'intelligence' | 'coding'; filters: Filters }> = [
       { metric: 'intelligence', filters: DEFAULT_FILTERS },
       { metric: 'coding', filters: DEFAULT_FILTERS },
-      { metric: 'intelligence', filters: { ...DEFAULT_FILTERS, includeHidden: false } },
-      {
-        metric: 'coding',
-        filters: { ...DEFAULT_FILTERS, includeHidden: false },
-      },
       { metric: 'intelligence', filters: { ...DEFAULT_FILTERS, provider: 'Anthropic' } },
       { metric: 'intelligence', filters: { ...DEFAULT_FILTERS, provider: 'Nonexistent' } },
     ]
@@ -122,7 +116,6 @@ describe('selectForMetric', () => {
   test('8 — DEFAULT_FILTERS', () => {
     expect(DEFAULT_FILTERS).toEqual({
       provider: null,
-      includeHidden: true,
       paretoOnly: false,
     })
   })

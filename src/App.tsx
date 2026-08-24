@@ -39,8 +39,6 @@ export default function App() {
 
   const selection = selectPlottable(rows, state.metric, state.filters)
   const tableRows = state.filters.paretoOnly ? selection.chartRows : selection.filtered
-  const hiddenCount = rows.filter((row) => row.hidden).length
-
   return (
     <div className="app-container">
       <p className="masthead">
@@ -66,7 +64,6 @@ export default function App() {
             <FilterBar
               filters={state.filters}
               providers={providers}
-              hiddenCount={hiddenCount}
               onChange={(filters) => {
                 set({ filters })
               }}

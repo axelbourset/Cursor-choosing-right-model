@@ -155,12 +155,6 @@ input {
   accent-color: var(--accent);
 }
 
-.filter-bar__hint {
-  color: var(--text-muted);
-  font-size: var(--step--1);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ─── panels ─────────────────────────────────────────────────────────────── */
 .panel {
   margin-top: var(--sp-5);

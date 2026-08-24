@@ -3,13 +3,11 @@ import { computePareto } from './pareto'
 
 export type Filters = {
   readonly provider: string | null
-  readonly includeHidden: boolean
   readonly paretoOnly: boolean
 }
 
 export const DEFAULT_FILTERS: Filters = {
   provider: null,
-  includeHidden: true,
   paretoOnly: false,
 }
 
@@ -28,9 +26,6 @@ export function applyFilters(rows: readonly ModelRow[], filters: Filters): reado
   const result: ModelRow[] = []
 
   for (const row of rows) {
-    if (!filters.includeHidden && row.hidden) {
-      continue
-    }
     if (filters.provider !== null && row.provider !== filters.provider) {
       continue
     }

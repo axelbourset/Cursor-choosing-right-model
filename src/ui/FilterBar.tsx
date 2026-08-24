@@ -3,16 +3,10 @@ import type { Filters } from '@domain/selection'
 export type FilterBarProps = {
   readonly filters: Filters
   readonly providers: readonly string[]
-  readonly hiddenCount: number
   readonly onChange: (f: Filters) => void
 }
 
-export function FilterBar({ filters, providers, hiddenCount, onChange }: FilterBarProps) {
-  const hiddenTitle =
-    hiddenCount > 0
-      ? `${hiddenCount} model(s) are marked hidden in Cursor’s catalog — not shown in the model picker by default, but still priced and listed here.`
-      : 'No hidden models in this snapshot. Hidden models are entries Cursor marks as not shown in the model picker UI.'
-
+export function FilterBar({ filters, providers, onChange }: FilterBarProps) {
   return (
     <div className="filter-bar">
       <label className="filter-bar__field">
@@ -33,17 +27,6 @@ export function FilterBar({ filters, providers, hiddenCount, onChange }: FilterB
             </option>
           ))}
         </select>
-      </label>
-      <label className="filter-bar__field" title={hiddenTitle}>
-        <input
-          className="filter-bar__check"
-          type="checkbox"
-          aria-label="Show hidden models"
-          checked={filters.includeHidden}
-          onChange={(event) => onChange({ ...filters, includeHidden: event.target.checked })}
-        />
-        Show hidden models
-        {hiddenCount > 0 ? <span className="filter-bar__hint">({hiddenCount})</span> : null}
       </label>
       <label
         className="filter-bar__field"
