@@ -38,11 +38,11 @@ describe('loadRepoEnv', () => {
   test('4 — reads .env from repo root when variable unset', async () => {
     delete process.env.AA_API_KEY
     const dir = await mkdtemp(path.join(os.tmpdir(), 'load-env-'))
-    await writeFile(path.join(dir, '.env'), 'AA_API_KEY=loaded-from-file\n', 'utf-8')
+    await writeFile(path.join(dir, '.env'), 'AA_API_KEY=dotenv-val\n', 'utf-8')
 
     await loadRepoEnv(dir)
 
-    expect(process.env.AA_API_KEY).toBe('loaded-from-file')
+    expect(process.env.AA_API_KEY).toBe('dotenv-val')
   })
 
   test('5 — missing .env is a no-op', async () => {
