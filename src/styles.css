@@ -180,6 +180,55 @@ a:hover {
   border: 0;
 }
 
+/* ─── stat strip — saturated colour blocks ────────────────────────────────── */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--sp-3);
+}
+
+/* The fill is the elevation — no border, no shadow, no gradient. */
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--radius-card);
+}
+
+.stat-tile__label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.stat-tile__value {
+  font-size: var(--fs-heading-lg);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-tile--mint {
+  background: var(--tile-mint);
+  color: var(--ink-inverted);
+}
+.stat-tile--ultraviolet {
+  background: var(--tile-ultraviolet);
+  color: var(--ink);
+}
+.stat-tile--yellow {
+  background: var(--tile-yellow);
+  color: var(--ink-inverted);
+}
+.stat-tile--pink {
+  background: var(--tile-pink);
+  color: var(--ink);
+}
+
 /* ─── buttons ────────────────────────────────────────────────────────────── */
 .btn {
   padding: var(--sp-1) var(--sp-3);

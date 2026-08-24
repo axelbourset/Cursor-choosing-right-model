@@ -6,6 +6,7 @@ import { CostScatterChart } from './charts/CostScatterChart'
 import { SnapshotDropZone } from './snapshot/SnapshotDropZone'
 import { useSnapshot } from './snapshot/useSnapshot'
 import { ModelTable } from './table/ModelTable'
+import { StatStrip } from './ui/StatStrip'
 import { useViewState } from './useViewState'
 
 type LoadedInfo = {
@@ -129,6 +130,13 @@ export default function App() {
       >
         {okResult ? (
           <>
+            <StatStrip
+              models={rows.length}
+              providers={providers.length}
+              shown={selection.shown}
+              total={selection.total}
+              frontier={selection.pareto.frontier.length}
+            />
             <CostScatterChart
               rows={rows}
               filters={state.filters}
