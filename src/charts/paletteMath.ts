@@ -26,10 +26,13 @@ function linearToSrgb(c: number): number {
 
 /** OkLab coordinates of a hex colour — the perceptual space the palette is built in. */
 export function hexToOklab(hex: string): [number, number, number] {
-  const [r, g, b] = hexToRgb(hex).map(srgbToLinear)
-  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
-  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
-  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+  const [r, g, b] = hexToRgb(hex)
+  const lr = srgbToLinear(r)
+  const lg = srgbToLinear(g)
+  const lb = srgbToLinear(b)
+  const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb)
+  const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb)
+  const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb)
   return [
     0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
     1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
@@ -46,8 +49,8 @@ export function oklabDistance(hexA: string, hexB: string): number {
 
 /** WCAG relative luminance of a hex colour, 0–1. */
 export function relativeLuminance(hex: string): number {
-  const [r, g, b] = hexToRgb(hex).map(srgbToLinear)
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  const [r, g, b] = hexToRgb(hex)
+  return 0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b)
 }
 
 /** WCAG contrast ratio between two hex colours, ≥ 1. */
