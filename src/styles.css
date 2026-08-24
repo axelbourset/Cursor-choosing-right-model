@@ -694,105 +694,162 @@ a:hover {
   border-bottom: 0;
 }
 
-/* ─── drop zone ──────────────────────────────────────────────────────────── */
-/* The dashed affordance is an interactive cue, not a clipped raised edge; it
-   follows border-radius on both paths (no clip-path is used). */
+/* ─── drop zone — the public site's first view ────────────────────────────── */
+/* The loudest moment on the page: a full saturated block, not a dashed
+   grey plate. The label is the control; the native input is visually
+   replaced (but stays keyboard-reachable — see the sr-only rule below). */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: min(8vh, var(--sp-6)) 0;
+}
+
 .dropzone__target {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
-  margin: var(--sp-6) 0 var(--sp-5);
-  padding: var(--sp-6) var(--sp-4);
-  background: var(--surface-1);
-  border: 1.5px dashed var(--border);
-  border-radius: var(--radius-xl);
-  color: var(--text-secondary);
+  width: 100%;
+  padding: var(--sp-6) var(--sp-5);
+  background: var(--mint);
+  border: 0;
+  border-radius: var(--radius-feature);
+  color: var(--ink-inverted);
   text-align: center;
   cursor: pointer;
   transition:
-    border-color 120ms,
-    background 120ms;
+    background 150ms ease,
+    color 150ms ease;
 }
 
+/* The spotlight move: the invitation intensifies to white. */
 .dropzone__target:hover,
 .dropzone__target:focus-within {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  background: var(--ink);
 }
 .dropzone__target:focus-within {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
-.dropzone__guide {
-  max-width: 34rem;
-  margin: 0 auto;
-  padding: var(--sp-4);
-  background: var(--surface-2);
+.dropzone__target input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
   border: 0;
-  /* concentric with .dropzone__target (--radius-xl minus its horizontal padding --sp-4) */
-  border-radius: calc(var(--radius-xl) - var(--sp-4));
-  box-shadow: inset 0 0 0 1px var(--border);
-  font-size: var(--step--1);
+}
+
+.dropzone__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-round);
+  background: var(--ink-inverted);
+  color: var(--mint);
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.dropzone__headline {
+  font-family: var(--font-display);
+  font-size: var(--fs-heading-lg);
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--ink-inverted);
+}
+
+.dropzone__sub {
+  font-size: var(--fs-body-sm);
+  color: var(--ink-inverted);
+}
+
+.dropzone__browse {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dropzone__target:hover .dropzone__icon,
+.dropzone__target:focus-within .dropzone__icon {
+  background: var(--mint);
+  color: var(--ink-inverted);
+}
+
+/* Guide card: the slate secondary surface. */
+.dropzone__guide {
+  width: 100%;
+  padding: var(--sp-4);
+  background: var(--slate);
+  border-radius: var(--radius-card);
+  font-size: var(--fs-body-sm);
+  color: var(--ink-soft);
 }
 
 .dropzone__steps {
   margin: 0;
   padding-left: 1.35rem;
-  color: var(--text-secondary);
+  color: var(--ink-soft);
 }
 .dropzone__steps li {
   margin-bottom: var(--sp-2);
 }
 .dropzone__steps li::marker {
-  color: var(--accent);
-  font-weight: 600;
+  color: var(--mint);
+  font-weight: 700;
 }
 
 .dropzone__assure {
   margin: var(--sp-4) 0 0;
   padding-top: var(--sp-3);
-  border-top: 1px solid var(--border);
-  color: var(--text-primary);
-  font-weight: 520;
+  border-top: 1px solid var(--frame);
+  color: var(--ink);
+  font-weight: 500;
 }
 
 .dropzone__attribution {
   margin: var(--sp-2) 0 0;
-  color: var(--text-muted);
-  font-size: var(--step--1);
+  color: var(--ink-meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
 }
 
 /* ─── notices ────────────────────────────────────────────────────────────── */
-/* Container edge is the inset ring (D2); the severity stripe is a second inset
-   shadow on the left, so no `border` property is used for either. */
+/* Error states carry the ultraviolet hairline — the second hazard does the
+   alarming here, not a red. */
 .notice {
   margin: var(--sp-4) 0;
   padding: var(--sp-3);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: var(--surface-1);
-  box-shadow:
-    inset 0 0 0 1px var(--border),
-    inset 3px 0 0 var(--text-muted);
-  font-size: var(--step--1);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  font-size: var(--fs-body-sm);
 }
 
 .notice--error {
-  box-shadow:
-    inset 0 0 0 1px var(--border),
-    inset 3px 0 0 var(--status-critical);
+  border-color: var(--ultraviolet);
 }
 .notice p {
   margin: 0 0 var(--sp-2);
-  font-weight: 560;
-  color: var(--text-primary);
+  font-weight: 600;
+  color: var(--ink);
 }
 .notice__list {
   margin: 0;
   padding-left: 1.35rem;
-  color: var(--text-secondary);
+  color: var(--ink-soft);
 }
 
 /* ─── footer ─────────────────────────────────────────────────────────────── */
@@ -860,103 +917,8 @@ a:hover {
   color: var(--text-primary);
 }
 
-/* Drop zone: this is the public site's first view — it should look deliberate. */
-.dropzone__target {
-  gap: var(--sp-3);
-  padding: var(--sp-6) var(--sp-5);
-  background:
-    radial-gradient(120% 140% at 50% 0%, var(--accent-soft), transparent 60%), var(--surface-1);
-  border-width: 2px;
-  font-size: var(--step-1);
-  font-weight: 550;
-  color: var(--text-secondary);
-}
-
-.dropzone__target input[type='file'] {
-  color: var(--text-muted);
-}
-.dropzone__steps li::marker {
-  font-weight: 700;
-}
-
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
   }
-}
-
-/* ═══ empty state — the public site's first view ══════════════════════════════
-   Screenshotted and rebuilt: it had no branding (the header lived inside the
-   gated children), a raw `Browse… / No file selected.` control, a full-width
-   drop target above a narrow centred card, and the whole thing jammed into the
-   top third of the viewport. */
-
-/* One column, matched widths, vertically settled instead of top-jammed. */
-.dropzone {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  max-width: 32rem;
-  margin: 0 auto;
-  padding: min(8vh, var(--sp-6)) 0;
-}
-
-.dropzone__target {
-  width: 100%;
-  gap: var(--sp-2);
-  padding: var(--sp-6) var(--sp-5);
-}
-
-/* The native file input is visually replaced — the label is the control. */
-.dropzone__target input[type='file'] {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
-.dropzone__icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-full);
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent);
-  color: var(--accent);
-  font-size: 1.125rem;
-  line-height: 1;
-}
-
-.dropzone__headline {
-  font-size: var(--step-1);
-  font-weight: 620;
-  color: var(--text-primary);
-}
-
-.dropzone__sub {
-  font-size: var(--step--1);
-  font-weight: 400;
-  color: var(--text-muted);
-}
-
-.dropzone__browse {
-  color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.dropzone__target:hover .dropzone__icon {
-  background: var(--accent);
-  color: #ffffff;
-}
-
-.dropzone__guide {
-  max-width: none;
-  width: 100%;
 }
