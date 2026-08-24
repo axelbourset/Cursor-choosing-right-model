@@ -510,30 +510,31 @@ a:hover {
 }
 
 .table-section {
-  background: var(--surface-1);
-  border: 0;
-  border-radius: var(--radius-lg);
-  box-shadow: inset 0 0 0 1px var(--border);
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
   /* Clips the toolbar's and table-wrapper's square corners — and the
-     scrollbar — to this container's rounded shape, so scrolled rows and the
-     sticky header background never escape past the curve. */
+     scrollbar — to this container's rounded shape. */
   overflow: hidden;
 }
 
 .table-section__subheading {
   margin: 0;
-  padding: var(--sp-3) var(--sp-3) 0;
-  color: var(--text-muted);
-  font-size: var(--step--1);
+  padding: var(--sp-3) var(--sp-4) 0;
+  color: var(--ink-meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
 }
 
 /* Scroll container is only the tbody region — toolbar stays fixed above it. */
 .table-wrapper {
   max-height: 28rem;
   overflow: auto;
-  border-top: 1px solid var(--border);
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--frame) transparent;
 }
 
 .table-wrapper::-webkit-scrollbar {
@@ -546,14 +547,14 @@ a:hover {
 }
 
 .table-wrapper::-webkit-scrollbar-thumb {
-  background-color: var(--border);
-  border-radius: var(--radius-full);
+  background-color: var(--frame);
+  border-radius: var(--radius-round);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background-color: var(--text-muted);
+  background-color: var(--ink-meta);
 }
 
 .model-table-panel {
@@ -565,8 +566,8 @@ a:hover {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3);
-  border-bottom: 1px solid var(--border);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--frame);
 }
 
 .model-table-search {
@@ -578,59 +579,75 @@ a:hover {
 }
 
 .model-table-search__label {
-  color: var(--text-secondary);
-  font-size: var(--step--1);
+  color: var(--ink-meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .model-table-search__input {
   flex: 1;
   min-width: 0;
+  min-height: 2rem;
   padding: var(--sp-1) var(--sp-2);
-  background: var(--surface-2);
-  border: 0;
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--border);
-  color: var(--text-primary);
-  font-size: var(--step--1);
+  background: var(--canvas);
+  border: 1px solid var(--ink-meta);
+  border-radius: var(--radius-tag);
+  color: var(--ink);
+  font-size: var(--fs-body-sm);
+  transition: border-color 150ms ease;
+}
+
+.model-table-search__input::placeholder {
+  color: var(--ink-meta);
 }
 
 .model-table-search__input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--mint);
 }
 
 .model-table-toolbar__count {
   margin: 0;
-  color: var(--text-muted);
-  font-size: var(--step--1);
+  color: var(--ink-meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
 
+/* Provider identity as a filled pill tag — the table's tie-in to the chart's
+   colour encoding. The fill is the provider's chart colour; ink follows the
+   tier via textOnProvider. */
 .provider-chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-2);
-}
-
-.provider-chip__dot {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: var(--radius-card);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  line-height: 1.4;
+  text-transform: uppercase;
 }
 
 .model-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: var(--step--1);
+  font-size: var(--fs-body-sm);
 }
 
 .model-table__caption {
-  padding: var(--sp-3) var(--sp-3) var(--sp-2);
-  color: var(--text-secondary);
-  font-size: var(--step--1);
+  padding: var(--sp-3) var(--sp-4) var(--sp-2);
+  color: var(--ink-meta);
+  font-size: var(--fs-body-sm);
   text-align: left;
 }
 
@@ -639,8 +656,8 @@ a:hover {
   top: 0;
   z-index: 1;
   padding: 0;
-  background: var(--surface-2);
-  box-shadow: inset 0 -1px 0 var(--border);
+  background: var(--slate);
+  box-shadow: inset 0 -1px 0 var(--frame);
   text-align: left;
   white-space: nowrap;
 }
@@ -654,44 +671,50 @@ a:hover {
   padding: var(--sp-2) var(--sp-3);
   background: none;
   border: 0;
-  color: var(--text-secondary);
-  font-size: var(--step--1);
-  font-weight: 580;
+  color: var(--ink-meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
   text-align: inherit;
   cursor: pointer;
 }
 
 .model-table__sort:hover {
-  color: var(--text-primary);
+  color: var(--ink);
 }
 .model-table__sort:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
-/* Zebra rows on a --surface-1/--surface-2 step (1.22:1 — subtle, secondary cue). */
-.model-table tbody tr:nth-child(even) {
-  background: var(--surface-2);
-}
+/* Flat rows: 1px hairline separators, no zebra. Hover is the slate shift. */
 .model-table tbody tr:hover {
-  background: var(--surface-3);
+  background: var(--slate);
 }
 
 .model-table__td {
   padding: var(--sp-2) var(--sp-3);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--frame);
   white-space: nowrap;
 }
 
 .model-table__td--num {
   text-align: right;
+  color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
 .model-table__td--empty {
-  color: var(--text-muted);
+  color: var(--ink-meta);
 }
 .model-table tbody tr:last-child .model-table__td {
   border-bottom: 0;
+}
+
+.model-table__td:first-child {
+  font-weight: 700;
+  color: var(--ink);
 }
 
 /* ─── drop zone — the public site's first view ────────────────────────────── */
@@ -886,35 +909,6 @@ a:hover {
   .table-wrapper {
     max-height: 24rem;
   }
-}
-
-/* ═══ design pass ═══════════════════════════════════════════════════════════
-   Legacy overrides from the previous visual language. Header and footer rules
-   were removed with the masthead restyle; the panel, tab, table and drop zone
-   rules below are superseded in their own tasks. */
-
-/* Table: the header should read as a header, and the first column as identity. */
-.model-table__th {
-  background: var(--surface-3);
-}
-
-.model-table__sort {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.model-table__td:first-child {
-  font-weight: 550;
-  color: var(--text-primary);
-}
-
-.model-table__td--num {
-  color: var(--text-secondary);
-}
-.model-table tbody tr:hover .model-table__td--num {
-  color: var(--text-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {

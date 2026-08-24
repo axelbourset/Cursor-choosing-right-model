@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ModelRow } from '@schema/snapshot'
-import { colorForProvider } from '../charts/providerColors'
+import { colorForProvider, textOnProvider } from '../charts/providerColors'
 import { COLUMNS } from './columns'
 import { useSortedRows } from './useSortedRows'
 
@@ -83,14 +83,16 @@ export function ModelTable({ rows }: ModelTableProps) {
                   if (value === '—') classes.push('model-table__td--empty')
 
                   if (column.key === 'provider') {
+                    const providerColor = colorForProvider(row.provider)
                     return (
                       <td key={column.key} className={classes.join(' ')}>
-                        <span className="provider-chip">
-                          <span
-                            className="provider-chip__dot"
-                            style={{ background: colorForProvider(row.provider) }}
-                            aria-hidden="true"
-                          />
+                        <span
+                          className="provider-chip"
+                          style={{
+                            background: providerColor,
+                            color: textOnProvider(providerColor),
+                          }}
+                        >
                           {value}
                         </span>
                       </td>

@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, test } from 'vitest'
 import type { ModelRow } from '@schema/snapshot'
+import { colorForProvider, textOnProvider } from '../charts/providerColors'
 import { ModelTable } from './ModelTable'
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
@@ -255,14 +256,27 @@ describe('ModelTable', () => {
     expect(rowNames(container)).toEqual(['Claude Opus 5'])
   })
 
-  test('15 — provider column shows a colour dot', () => {
+  test('15 — provider column shows a colour-filled pill', () => {
     render(
       <ModelTable
         rows={[makeRow({ provider: 'Anthropic', cursorName: 'Claude Opus 5', cursorSlug: 'opus' })]}
       />,
     )
     const row = screen.getByText('Claude Opus 5').closest('tr')!
-    expect(row.querySelector('.provider-chip__dot')).not.toBeNull()
+    const chip = row.querySelector('.provider-chip') as HTMLElement | null
+    expect(chip).not.toBeNull()
+    // jsdom serialises colours to rgb() — normalise back to hex for the assertion
+    const toHex = (css: string): string => {
+      const m = css.match(/rgba?\((\d+), (\d+), (\d+)/)
+      if (!m) return css
+      return (
+        '#' +
+        [m[1]!, m[2]!, m[3]!].map((part) => Number(part).toString(16).padStart(2, '0')).join('')
+      )
+    }
+    expect(toHex(chip!.style.backgroundColor)).toBe(colorForProvider('Anthropic'))
+    expect(toHex(chip!.style.color)).toBe(textOnProvider(colorForProvider('Anthropic')))
+    expect(chip).toHaveTextContent('Anthropic')
   })
 
   test('13 — the table', () => {
