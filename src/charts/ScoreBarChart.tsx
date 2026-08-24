@@ -45,10 +45,11 @@ export function ScoreBarChart({ rows, filters, metric, onMetricChange }: ScoreBa
   }, [option])
 
   return (
-    <section>
-      <div role="tablist" aria-label="Score metric">
+    <section className="panel">
+      <div className="panel__controls tabs" role="tablist" aria-label="Score metric">
         {METRIC_KEYS.map((key) => (
           <button
+            className="tab"
             key={key}
             type="button"
             role="tab"
@@ -60,7 +61,7 @@ export function ScoreBarChart({ rows, filters, metric, onMetricChange }: ScoreBa
         ))}
       </div>
       <CoverageNote shown={selection.shown} total={selection.total} />
-      <div ref={chartRef} data-testid="score-bar-chart" />
+      <div className="panel__chart" ref={chartRef} data-testid="score-bar-chart" />
     </section>
   )
 }

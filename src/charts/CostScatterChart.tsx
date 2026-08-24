@@ -57,10 +57,10 @@ export function CostScatterChart({
   }, [option])
 
   return (
-    <section>
-      <div role="radiogroup" aria-label="Scatter Y axis metric">
+    <section className="panel">
+      <div className="panel__controls radios" role="radiogroup" aria-label="Scatter Y axis metric">
         {METRIC_KEYS.map((key) => (
-          <label key={key}>
+          <label className="radio" key={key}>
             <input
               type="radio"
               name="scatter-metric"
@@ -71,7 +71,7 @@ export function CostScatterChart({
           </label>
         ))}
       </div>
-      <label>
+      <label className="panel__controls check">
         <input
           type="checkbox"
           checked={showFrontier}
@@ -80,10 +80,10 @@ export function CostScatterChart({
         Show Pareto frontier line
       </label>
       <CoverageNote shown={shown} total={selection.total} />
-      <p data-testid="frontier-legend">
+      <p className="panel__legend" data-testid="frontier-legend">
         {pareto.frontier.length} {pareto.frontier.length === 1 ? 'model' : 'models'} on the frontier
       </p>
-      <div ref={chartRef} data-testid="cost-scatter-chart" />
+      <div className="panel__chart" ref={chartRef} data-testid="cost-scatter-chart" />
     </section>
   )
 }

@@ -9,9 +9,10 @@ export type FilterBarProps = {
 export function FilterBar({ filters, providers, onChange }: FilterBarProps) {
   return (
     <div className="filter-bar">
-      <label>
+      <label className="filter-bar__field">
         Provider
         <select
+          className="filter-bar__select"
           aria-label="Provider"
           value={filters.provider ?? ''}
           onChange={(event) => {
@@ -27,8 +28,9 @@ export function FilterBar({ filters, providers, onChange }: FilterBarProps) {
           ))}
         </select>
       </label>
-      <label>
+      <label className="filter-bar__field">
         <input
+          className="filter-bar__check"
           type="checkbox"
           aria-label="include hidden"
           checked={filters.includeHidden}
@@ -36,8 +38,9 @@ export function FilterBar({ filters, providers, onChange }: FilterBarProps) {
         />
         include hidden
       </label>
-      <label>
+      <label className="filter-bar__field">
         <input
+          className="filter-bar__check"
           type="checkbox"
           aria-label="Pareto only"
           checked={filters.paretoOnly}

@@ -11,18 +11,20 @@ import { useViewState } from './useViewState'
 
 function Header({ snapshot }: { readonly snapshot: Snapshot }) {
   return (
-    <header>
-      <h1>Cursor Model Picker</h1>
-      <p data-testid="generated-at">{snapshot.generatedAt}</p>
-      <p>{snapshot.models.length} models</p>
-      <p>AA index v{snapshot.source.aaIndexVersion}</p>
+    <header className="site-header">
+      <h1 className="site-header__title">Cursor Model Picker</h1>
+      <p className="site-header__meta" data-testid="generated-at">
+        {snapshot.generatedAt}
+      </p>
+      <p className="site-header__meta">{snapshot.models.length} models</p>
+      <p className="site-header__meta">AA index v{snapshot.source.aaIndexVersion}</p>
     </header>
   )
 }
 
 function Footer() {
   return (
-    <footer>
+    <footer className="site-footer">
       <a href="https://artificialanalysis.ai">Data: Artificial Analysis (artificialanalysis.ai)</a>
     </footer>
   )

@@ -13,7 +13,7 @@ export type SnapshotDropZoneProps = {
 
 function FileInput({ onFile }: { readonly onFile: (file: File) => void }) {
   return (
-    <label>
+    <label className="dropzone__target">
       Snapshot file
       <input
         type="file"
@@ -43,24 +43,24 @@ function FileInput({ onFile }: { readonly onFile: (file: File) => void }) {
 
 function EmptyContent() {
   return (
-    <div>
-      <ol>
+    <div className="dropzone__guide">
+      <ol className="dropzone__steps">
         <li>Get a free API key at artificialanalysis.ai</li>
         <li>git clone … && npm install</li>
         <li>Paste the key into .env, then run npm run refresh</li>
         <li>Drop the resulting data/models.json above</li>
       </ol>
-      <p>Your file stays in this browser. It is never uploaded.</p>
-      <p>Data: Artificial Analysis (artificialanalysis.ai)</p>
+      <p className="dropzone__assure">Your file stays in this browser. It is never uploaded.</p>
+      <p className="dropzone__attribution">Data: Artificial Analysis (artificialanalysis.ai)</p>
     </div>
   )
 }
 
 function InvalidContent({ errors }: { readonly errors: readonly string[] }) {
   return (
-    <div>
+    <div className="notice notice--error">
       <p>Not a valid snapshot:</p>
-      <ul>
+      <ul className="notice__list">
         {errors.map((error) => (
           <li key={error}>{error}</li>
         ))}
@@ -87,14 +87,16 @@ function OkBanner({
   readonly onClear: () => void
 }) {
   return (
-    <div>
-      <p>source: {source === 'dropped' ? 'dropped file' : 'local file'}</p>
+    <div className="source-banner">
+      <p className="source-banner__label">
+        source: {source === 'dropped' ? 'dropped file' : 'local file'}
+      </p>
       {source === 'dropped' ? (
-        <button type="button" onClick={onUseLocal}>
+        <button className="btn btn--ghost" type="button" onClick={onUseLocal}>
           use local file
         </button>
       ) : null}
-      <button type="button" onClick={onClear}>
+      <button className="btn btn--ghost" type="button" onClick={onClear}>
         clear data
       </button>
     </div>
