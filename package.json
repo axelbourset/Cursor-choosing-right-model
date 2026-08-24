@@ -19,6 +19,9 @@
     "verify": "npm run lint && npm run depcruise && npm run test && npm run guard && npm run build"
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource/anton": "^5.3.0",
     "echarts": "^6.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

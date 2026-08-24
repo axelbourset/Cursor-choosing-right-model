@@ -1,6 +1,8 @@
 import { createRoot } from 'react-dom/client'
+import '@fontsource/anton'
+import '@fontsource-variable/space-grotesk'
+import '@fontsource-variable/jetbrains-mono'
 import './tokens.css'
-import './squircle.css'
 import './styles.css'
 import App from './App'
 const el = document.getElementById('root')

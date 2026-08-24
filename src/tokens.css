@@ -1,93 +1,113 @@
-/* ─── design tokens — dark is the default ────────────────────────────────── */
+/* ─── design tokens — loud editorial dark system ─────────────────────────────
+   One near-black canvas, two hazard accents, hairline edges, solid colour
+   blocks. Dark is the only mode. Legacy tokens below are retained until every
+   section is restyled; the cleanup task removes them. */
+
 :root {
-  /* radii — six-step scale (D5). `full` is a stadium, no squircle. */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
-  /* the single canonical curve knob — `corner-shape: squircle` is superellipse(2) (D1) */
-  --corner: squircle;
+  /* ─── fonts ────────────────────────────────────────────────────────────── */
+  --font-display: 'Anton', Impact, 'Helvetica Neue', sans-serif;
+  --font-sans: 'Space Grotesk Variable', 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Courier New', monospace;
 
-  /* surfaces (dark-first, measured — D2). --surface-1 is the value the palette was
-     validated against; do not change it. */
-  --surface-0: #0d0d0e; /* page */
-  --surface-1: #1a1a19; /* panels and chart surface — load-bearing */
-  --surface-2: #23242a; /* inputs, chips */
-  --surface-3: #303034; /* sticky header, hover — 1.33:1 from the panel */
+  /* ─── type scale ───────────────────────────────────────────────────────── */
+  --fs-hero: clamp(3rem, 7vw, 6.69rem); /* masthead wordmark, display face only */
+  --fs-heading-lg: 2.125rem; /* 34/700 section headline */
+  --fs-heading: 1.5rem; /* 24/700 panel headline */
+  --fs-heading-sm: 1.25rem; /* 20/700 compact headline */
+  --fs-eyebrow: 1.1875rem; /* 19/300 uppercase, wide tracking */
+  --fs-body: 1rem; /* 16/500 reading body */
+  --fs-body-sm: 0.8125rem; /* 13 compact body */
+  --fs-label: 0.75rem; /* 12 caps label */
+  --fs-micro: 0.6875rem; /* 11 mono micro */
+  --fs-nano: 0.625rem; /* 10 mono timestamp */
 
-  /* the load-bearing edge — 1.54:1 on the panel. Applied as an inset ring (D2) so it
-     survives the fallback's clip-path. */
-  --border: #3a3a3d;
+  /* ─── canvas, surfaces, edges ──────────────────────────────────────────── */
+  --canvas: #131313; /* the page — there is no light mode */
+  --slate: #2d2d2d; /* secondary surface: sticky header, guide card */
+  --frame: #313131; /* quiet 1px separator */
+  --hairline: #ffffff; /* card edge on dark */
 
-  /* ink */
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #8a8a82;
+  /* ─── ink ──────────────────────────────────────────────────────────────── */
+  --ink: #ffffff; /* primary text */
+  --ink-meta: #949494; /* metadata, bylines, axis labels */
+  --ink-soft: #e9e9e9; /* text on slate buttons */
+  --ink-inverted: #131313; /* text on mint / yellow / white fills */
 
-  /* categorical series (D4). Validated dark palette on --surface-1. */
-  --series-1: #3987e5; /* blue — frontier / bar */
-  --series-2: #d95926; /* orange — dominated */
-  --series-3: #199e70; /* aqua — third series if needed */
-  --series-4: #c98500; /* yellow — provider chips only */
-  --series-5: #d55181; /* magenta — provider chips only */
-  --series-6: #008300; /* green — provider chips only */
-  --series-7: #9085e9; /* violet — provider chips only */
-  --series-8: #e66767; /* red — provider chips only */
+  /* ─── hazard accents ───────────────────────────────────────────────────── */
+  --mint: #3cffd0; /* primary CTA fill, active underline, frontier line */
+  --ultraviolet: #5200ff; /* error notices, secondary tiles */
+  --mint-deep: #309875; /* mint-surface border variant */
+  --rule-purple: #3d00bf; /* vertical rails */
 
-  /* accent — focus rings, active borders, active text only (D4 rule).
-     Same hue as --series-1; NEVER a filled background behind chart marks. */
-  --accent: #3987e5; /* 4.79:1 on panel, 5.34:1 on page */
-  --accent-soft: #1d3550; /* pill fills — white text on it is 12.5:1 */
+  /* ─── interaction states ───────────────────────────────────────────────── */
+  --link-hover: #3860be; /* every link hovers here */
+  --focus-ring: #1eaedb; /* keyboard focus only */
+  --hover-fill: rgba(255, 255, 255, 0.2); /* button hover invert */
+  --pressed: rgba(140, 140, 140, 0.87); /* active button fill */
+  --overlay-ring: rgba(0, 0, 0, 0.33); /* the one atmospheric 1px ring */
 
-  /* status — reserved, never reused as a series */
-  --status-good: #199e70;
-  --status-warning: #c98500;
-  --status-serious: #d95926;
-  --status-critical: #e66767;
+  /* ─── colour-block tiles (stat strip) ──────────────────────────────────── */
+  --tile-mint: #3cffd0;
+  --tile-ultraviolet: #5200ff;
+  --tile-yellow: #ffe01a;
+  --tile-pink: #ff64b0;
+  --tile-orange: #ff6a2b; /* spare */
+  --tile-blue: #2e6cff; /* spare */
 
-  /* spacing — unchanged from I01 */
+  /* ─── radii ────────────────────────────────────────────────────────────── */
+  --radius-tag: 2px; /* inputs, small badges */
+  --radius-frame: 3px; /* inline media */
+  --radius-nested: 4px; /* nested card content */
+  --radius-card: 20px; /* cards, tiles */
+  --radius-feature: 24px; /* feature cards, buttons */
+  --radius-promo: 30px; /* large promotional buttons */
+  --radius-pill-outline: 40px; /* outlined CTA pills */
+  --radius-round: 9999px; /* dots and circles */
+
+  /* ─── spacing (unchanged — 4/8/12/16/24/32px) ──────────────────────────── */
   --sp-1: 0.25rem;
   --sp-2: 0.5rem;
   --sp-3: 0.75rem;
   --sp-4: 1rem;
   --sp-5: 1.5rem;
   --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
 
-  /* type scale — unchanged from I01 */
+  /* ═══ legacy tokens — sections not yet restyled still consume these.
+     The cleanup task (N08) deletes them. ═══════════════════════════════════ */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  --corner: squircle;
+  --surface-0: #0d0d0e;
+  --surface-1: #1a1a19;
+  --surface-2: #23242a;
+  --surface-3: #303034;
+  --border: #3a3a3d;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8a8a82;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --accent: #3987e5;
+  --accent-soft: #1d3550;
+  --status-good: #199e70;
+  --status-warning: #c98500;
+  --status-serious: #d95926;
+  --status-critical: #e66767;
   --step--1: 0.8125rem;
   --step-0: 0.9375rem;
   --step-1: 1.0625rem;
   --step-2: 1.375rem;
   --step-3: 1.875rem;
-}
-
-/* ─── light override — opt-in only, not an auto-flip (per plan R01) ───────────
- * Dark is the unconditional default on bare :root. Light applies only when the
- * document opts in via <html data-theme="light">. It does NOT follow the OS
- * prefers-color-scheme setting, so a light-mode OS still gets the dark design. */
-:root[data-theme='light'] {
-  --surface-0: #fbfbfa;
-  --surface-1: #ffffff;
-  --surface-2: #f5f5f4;
-  --surface-3: #ececea;
-  --border: #d8d8d4;
-  --text-primary: #1c1c1a;
-  --text-secondary: #4a4a46;
-  --text-muted: #6b6b66;
-  --series-1: #2f6f4f;
-  --series-2: #c0533f;
-  --series-3: #199e70;
-  --series-4: #8a5a00;
-  --series-5: #b03f6b;
-  --series-6: #007a00;
-  --series-7: #6a5fb8;
-  --series-8: #c04545;
-  --accent: #2f6f4f;
-  --accent-soft: #e8f1eb;
-  --status-good: #199e70;
-  --status-warning: #8a5a00;
-  --status-serious: #c0533f;
-  --status-critical: #b03a30;
 }
