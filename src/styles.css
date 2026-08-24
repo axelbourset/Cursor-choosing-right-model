@@ -106,6 +106,14 @@ input {
   outline-offset: 2px;
 }
 
+/* Same divider convention as .site-header__meta above — without it "replace",
+   "use local file" and "clear data" run together as one phrase. */
+.site-header__action + .site-header__action::before {
+  content: '·';
+  margin-right: var(--sp-3);
+  color: var(--text-muted);
+}
+
 /* Visually hidden, not display:none — stays keyboard-reachable and findable
    by getByLabelText (a `display:none` input drops out of the tab order). */
 .site-header__action input {
@@ -164,9 +172,10 @@ input {
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-/* One aligned toolbar row — X axis, Y axis segmented control, provider,
-   pareto/frontier checks and the coverage count all share this bar instead of
-   three stacked, divider-separated rows plus a separate filter card. */
+/* One aligned toolbar row — X axis, Y axis segmented control, provider and the
+   pareto/frontier checks all share this bar instead of three stacked,
+   divider-separated rows plus a separate filter card. The coverage count and
+   frontier count live together below, in .panel__status. */
 .panel__toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -184,16 +193,31 @@ input {
   height: 420px;
 }
 
-.panel__legend {
+/* Coverage count ("N/M shown") and frontier count ("N models on the
+   frontier") were two separate, differently-aligned lines; they describe the
+   same chart and now read as one status line. */
+.panel__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
   margin: var(--sp-2) 0 0;
+}
+
+.panel__status .coverage-note + .panel__legend::before {
+  content: '·';
+  margin-right: var(--sp-3);
+  color: var(--text-muted);
+}
+
+.panel__legend {
+  margin: 0;
   color: var(--text-secondary);
   font-size: var(--step--1);
   font-variant-numeric: tabular-nums;
 }
 
 .coverage-note {
-  margin-left: auto;
-  padding-left: var(--sp-4);
   color: var(--text-muted);
   font-size: var(--step--1);
   font-variant-numeric: tabular-nums;

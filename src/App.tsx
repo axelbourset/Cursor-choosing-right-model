@@ -13,6 +13,20 @@ type LoadedInfo = {
   readonly source: SnapshotSource
 }
 
+const GENERATED_AT_FORMAT = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
+/** Short readable date for the header meta line; the full ISO string stays
+ * available as the element's `title` so precision is one hover away. */
+function formatGeneratedAt(iso: string): string {
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? iso : GENERATED_AT_FORMAT.format(date)
+}
+
 function Header({
   loaded,
   onReplace,
@@ -29,8 +43,12 @@ function Header({
       <h1 className="site-header__title">Cursor Model Picker</h1>
       {loaded ? (
         <div className="site-header__meta-row">
-          <p className="site-header__meta" data-testid="generated-at">
-            {loaded.snapshot.generatedAt}
+          <p
+            className="site-header__meta"
+            data-testid="generated-at"
+            title={loaded.snapshot.generatedAt}
+          >
+            {formatGeneratedAt(loaded.snapshot.generatedAt)}
           </p>
           <p className="site-header__meta">{loaded.snapshot.models.length} models</p>
           <p className="site-header__meta">AA index v{loaded.snapshot.source.aaIndexVersion}</p>

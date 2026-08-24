@@ -109,7 +109,7 @@ describe('App', () => {
     expect(screen.getByTestId('cost-scatter-chart')).toBeInTheDocument()
     expect(screen.queryByTestId('score-bar-chart')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Provider')).toBeInTheDocument()
-    expect(screen.getByLabelText('Pareto only')).toBeInTheDocument()
+    expect(screen.getByLabelText('Only frontier models')).toBeInTheDocument()
   })
 
   test('3 — state ok: the footer attribution text is present', () => {
@@ -124,14 +124,16 @@ describe('App', () => {
     ).toBeInTheDocument()
   })
 
-  test('4 — state ok: the header shows the snapshot generatedAt', () => {
+  test('4 — state ok: the header shows the snapshot generatedAt as a short readable date, full ISO on hover', () => {
     mockSnapshotHook({
       kind: 'ok',
       source: 'local',
       snapshot: makeSnapshot([makeRow()], '2026-03-15T09:30:00.000Z'),
     })
     render(<App />)
-    expect(screen.getByTestId('generated-at')).toHaveTextContent('2026-03-15T09:30:00.000Z')
+    const generatedAt = screen.getByTestId('generated-at')
+    expect(generatedAt).toHaveTextContent('15 Mar 2026')
+    expect(generatedAt).toHaveAttribute('title', '2026-03-15T09:30:00.000Z')
   })
 
   test('5 — selecting a provider in the chart toolbar: the table row count drops accordingly', () => {
@@ -171,7 +173,7 @@ describe('App', () => {
     mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
     render(<App />)
     expect(tbodyRows()).toHaveLength(3)
-    fireEvent.click(screen.getByLabelText('Pareto only'))
+    fireEvent.click(screen.getByLabelText('Only frontier models'))
     expect(tbodyRows()).toHaveLength(1)
     expect(within(tbodyRows()[0]!).getAllByRole('cell')[0]).toHaveTextContent('Frontier')
     expect(screen.getByText('1/3 shown')).toBeInTheDocument()
@@ -203,7 +205,7 @@ describe('App', () => {
     ]
     mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
     render(<App />)
-    fireEvent.click(screen.getByLabelText('Pareto only'))
+    fireEvent.click(screen.getByLabelText('Only frontier models'))
     expect(tbodyRows()).toHaveLength(1)
     expect(within(tbodyRows()[0]!).getAllByRole('cell')[0]).toHaveTextContent('Intel Frontier')
     fireEvent.click(screen.getByRole('radio', { name: 'Coding' }))
