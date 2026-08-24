@@ -1,7 +1,7 @@
 /* ─── design tokens — loud editorial dark system ─────────────────────────────
    One near-black canvas, two hazard accents, hairline edges, solid colour
-   blocks. Dark is the only mode. Legacy tokens below are retained until every
-   section is restyled; the cleanup task removes them. */
+   blocks. Dark is the only mode. Hex values live here and in
+   src/charts/{theme,providerColors,paletteMath}.ts only. */
 
 :root {
   /* ─── fonts ────────────────────────────────────────────────────────────── */
@@ -64,7 +64,7 @@
   --radius-pill-outline: 40px; /* outlined CTA pills */
   --radius-round: 9999px; /* dots and circles */
 
-  /* ─── spacing (unchanged — 4/8/12/16/24/32px) ──────────────────────────── */
+  /* ─── spacing (4/8/12/16/24/32px) ──────────────────────────────────────── */
   --sp-1: 0.25rem;
   --sp-2: 0.5rem;
   --sp-3: 0.75rem;
@@ -73,41 +73,4 @@
   --sp-6: 2rem;
   --sp-7: 3rem;
   --sp-8: 4rem;
-
-  /* ═══ legacy tokens — sections not yet restyled still consume these.
-     The cleanup task (N08) deletes them. ═══════════════════════════════════ */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
-  --corner: squircle;
-  --surface-0: #0d0d0e;
-  --surface-1: #1a1a19;
-  --surface-2: #23242a;
-  --surface-3: #303034;
-  --border: #3a3a3d;
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #8a8a82;
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --series-3: #199e70;
-  --series-4: #c98500;
-  --series-5: #d55181;
-  --series-6: #008300;
-  --series-7: #9085e9;
-  --series-8: #e66767;
-  --accent: #3987e5;
-  --accent-soft: #1d3550;
-  --status-good: #199e70;
-  --status-warning: #c98500;
-  --status-serious: #d95926;
-  --status-critical: #e66767;
-  --step--1: 0.8125rem;
-  --step-0: 0.9375rem;
-  --step-1: 1.0625rem;
-  --step-2: 1.375rem;
-  --step-3: 1.875rem;
 }
