@@ -74,7 +74,7 @@ export async function fetchArtificialAnalysis(
 ): Promise<AaFetchResult> {
   const headers = { 'x-api-key': apiKey }
   const models: AaModel[] = []
-  let indexVersion!: number
+  let indexVersion: number
   let rateLimitRemaining: string | null
   let page = 1
 

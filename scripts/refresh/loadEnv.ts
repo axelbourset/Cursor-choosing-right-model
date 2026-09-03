@@ -10,13 +10,18 @@ const KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
 function parseValue(raw: string): string {
   const trimmed = raw.trim()
 
+  // A quoted value is taken whole, so a # inside the quotes survives.
   const quote = trimmed.startsWith('"') ? '"' : trimmed.startsWith("'") ? "'" : null
-  if (quote !== null && trimmed.length >= 2 && trimmed.endsWith(quote)) {
-    return trimmed.slice(1, -1)
+  if (quote !== null) {
+    const closing = trimmed.indexOf(quote, 1)
+    if (closing !== -1) {
+      return trimmed.slice(1, closing)
+    }
   }
 
-  const comment = trimmed.indexOf(' #')
-  return comment === -1 ? trimmed : trimmed.slice(0, comment).trim()
+  // Otherwise an unquoted trailing comment is dropped. Any whitespace counts as the
+  // boundary, not just a literal space — a tab before # is just as common.
+  return trimmed.replace(/\s#.*$/, '').trim()
 }
 
 /** Applies `KEY=value` lines to `env`, without overwriting anything already set.
@@ -49,7 +54,9 @@ export async function loadRepoEnv(repoRoot: string): Promise<void> {
   } catch (error) {
     // A missing .env is fine — the key may already be in the environment. Anything else
     // (EACCES, EISDIR) is a real problem the operator needs to see.
-    if ((error as { code?: string }).code !== 'ENOENT') {
+    // Narrowed rather than asserted: a non-object rejection would throw on the property read.
+    const code = error instanceof Error && 'code' in error ? error.code : undefined
+    if (code !== 'ENOENT') {
       throw error
     }
   }

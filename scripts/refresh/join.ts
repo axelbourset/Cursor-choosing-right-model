@@ -73,6 +73,9 @@ function resolvePrices(
 function buildAaIndex(aaModels: readonly AaModel[]): Map<string, AaModel> {
   const index = new Map<string, AaModel>()
   for (const model of aaModels) {
+    if (index.has(model.slug)) {
+      throw new JoinError(`duplicate AA slug: ${model.slug}`)
+    }
     index.set(model.slug, model)
   }
   return index
@@ -83,6 +86,9 @@ function buildCatalogueIndex(
 ): Map<string, CursorCatalogueRow> {
   const index = new Map<string, CursorCatalogueRow>()
   for (const row of catalogue) {
+    if (index.has(row.name)) {
+      throw new JoinError(`duplicate catalogue row: ${row.name}`)
+    }
     index.set(row.name, row)
   }
   return index

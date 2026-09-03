@@ -3,44 +3,11 @@
   "intelligence_index_version": 4.1,
   "pagination": {
     "page": 1,
-    "page_size": 22,
+    "page_size": 18,
     "total_pages": 2,
     "has_more": true
   },
   "data": [
-    {
-      "id": "00000000-0000-4000-8000-000000000001",
-      "name": "Fixture Model 1 (Adaptive Reasoning, Max Effort)",
-      "slug": "grok-4-6",
-      "release_date": "2026-01-01",
-      "model_creator": {
-        "id": "00000000-0000-4000-8000-0000000000aa",
-        "name": "Fixture Labs"
-      },
-      "evaluations": {
-        "artificial_analysis_intelligence_index": 57,
-        "artificial_analysis_coding_index": 67,
-        "artificial_analysis_agentic_index": 52
-      },
-      "artificial_analysis_intelligence_index_cost": {
-        "total_cost": 5.7,
-        "cost_per_task": {
-          "total_cost": 0.57
-        }
-      },
-      "pricing": {
-        "price_1m_input_tokens": 2,
-        "price_1m_output_tokens": 5,
-        "price_1m_cache_hit_tokens": 0.2,
-        "price_1m_cache_write_tokens": 2.5
-      },
-      "performance": {
-        "median_output_tokens_per_second": 51,
-        "median_time_to_first_token_seconds": 1.0,
-        "median_time_to_first_answer_token_seconds": 1.0,
-        "median_end_to_end_response_time_seconds": 5.0
-      }
-    },
     {
       "id": "00000000-0000-4000-8000-000000000002",
       "name": "Fixture Model 2 (Adaptive Reasoning, Max Effort)",
@@ -75,39 +42,6 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000003",
-      "name": "Fixture Model 3 (Adaptive Reasoning, Max Effort)",
-      "slug": "grok-4-5",
-      "release_date": "2026-01-01",
-      "model_creator": {
-        "id": "00000000-0000-4000-8000-0000000000aa",
-        "name": "Fixture Labs"
-      },
-      "evaluations": {
-        "artificial_analysis_intelligence_index": 51,
-        "artificial_analysis_coding_index": null,
-        "artificial_analysis_agentic_index": null
-      },
-      "artificial_analysis_intelligence_index_cost": {
-        "total_cost": 5.1,
-        "cost_per_task": {
-          "total_cost": 0.51
-        }
-      },
-      "pricing": {
-        "price_1m_input_tokens": 4,
-        "price_1m_output_tokens": 7,
-        "price_1m_cache_hit_tokens": 0.4,
-        "price_1m_cache_write_tokens": 5.0
-      },
-      "performance": {
-        "median_output_tokens_per_second": 53,
-        "median_time_to_first_token_seconds": 1.0,
-        "median_time_to_first_answer_token_seconds": 1.0,
-        "median_end_to_end_response_time_seconds": 5.0
-      }
-    },
-    {
       "id": "00000000-0000-4000-8000-000000000004",
       "name": "Fixture Model 4 (Adaptive Reasoning, Max Effort)",
       "slug": "grok-4-5",
@@ -130,39 +64,6 @@
       },
       "performance": {
         "median_output_tokens_per_second": 54,
-        "median_time_to_first_token_seconds": 1.0,
-        "median_time_to_first_answer_token_seconds": 1.0,
-        "median_end_to_end_response_time_seconds": 5.0
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000005",
-      "name": "Fixture Model 5 (Adaptive Reasoning, Max Effort)",
-      "slug": "claude-4-sonnet-thinking",
-      "release_date": "2026-01-01",
-      "model_creator": {
-        "id": "00000000-0000-4000-8000-0000000000aa",
-        "name": "Fixture Labs"
-      },
-      "evaluations": {
-        "artificial_analysis_intelligence_index": 45,
-        "artificial_analysis_coding_index": 55,
-        "artificial_analysis_agentic_index": 40
-      },
-      "artificial_analysis_intelligence_index_cost": {
-        "total_cost": 4.5,
-        "cost_per_task": {
-          "total_cost": 0.45
-        }
-      },
-      "pricing": {
-        "price_1m_input_tokens": 1,
-        "price_1m_output_tokens": 9,
-        "price_1m_cache_hit_tokens": 0.1,
-        "price_1m_cache_write_tokens": 1.25
-      },
-      "performance": {
-        "median_output_tokens_per_second": 55,
         "median_time_to_first_token_seconds": 1.0,
         "median_time_to_first_answer_token_seconds": 1.0,
         "median_end_to_end_response_time_seconds": 5.0
@@ -356,34 +257,6 @@
       },
       "performance": {
         "median_output_tokens_per_second": 61,
-        "median_time_to_first_token_seconds": 1.0,
-        "median_time_to_first_answer_token_seconds": 1.0,
-        "median_end_to_end_response_time_seconds": 5.0
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000012",
-      "name": "Fixture Model 12 (Adaptive Reasoning, Max Effort)",
-      "slug": "claude-opus-4-7",
-      "release_date": "2026-01-01",
-      "model_creator": {
-        "id": "00000000-0000-4000-8000-0000000000aa",
-        "name": "Fixture Labs"
-      },
-      "evaluations": {
-        "artificial_analysis_intelligence_index": 24,
-        "artificial_analysis_coding_index": null,
-        "artificial_analysis_agentic_index": null
-      },
-      "artificial_analysis_intelligence_index_cost": null,
-      "pricing": {
-        "price_1m_input_tokens": 3,
-        "price_1m_output_tokens": 7,
-        "price_1m_cache_hit_tokens": null,
-        "price_1m_cache_write_tokens": null
-      },
-      "performance": {
-        "median_output_tokens_per_second": 62,
         "median_time_to_first_token_seconds": 1.0,
         "median_time_to_first_answer_token_seconds": 1.0,
         "median_end_to_end_response_time_seconds": 5.0

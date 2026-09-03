@@ -67,6 +67,7 @@ function createFixtureDeps(overrides: Partial<RefreshDeps> = {}): {
       minExpectedAaModels: overrides.minExpectedAaModels ?? 40,
       overrides: overrides.overrides ?? new Map(),
       previousSnapshot: overrides.previousSnapshot ?? null,
+      repoRoot: overrides.repoRoot ?? '.',
     },
     calls,
     transportCalls,
@@ -124,6 +125,7 @@ describe('runRefresh', () => {
         minExpectedAaModels: 40,
         overrides: new Map(),
         previousSnapshot: null,
+        repoRoot: '.',
       },
       'fixture',
     )
@@ -159,6 +161,7 @@ describe('runRefresh', () => {
         minExpectedAaModels: 1,
         overrides: new Map(),
         previousSnapshot: null,
+        repoRoot: '.',
       },
       'fixture',
     )
@@ -219,6 +222,7 @@ describe('runRefresh', () => {
         minExpectedAaModels: 40,
         overrides: new Map(),
         previousSnapshot: null,
+        repoRoot: '.',
       },
       'fixture',
     )
@@ -246,6 +250,7 @@ describe('runRefresh', () => {
         minExpectedAaModels: 40,
         overrides: new Map(),
         previousSnapshot: null,
+        repoRoot: '.',
       },
       'fixture',
     )
@@ -309,6 +314,7 @@ describe('runRefresh', () => {
         minExpectedAaModels: 40,
         overrides: new Map(),
         previousSnapshot: null,
+        repoRoot: '.',
       },
       'fixture',
     )
@@ -347,6 +353,7 @@ describe('runRefresh', () => {
         minExpectedAaModels: 40,
         overrides: new Map(),
         previousSnapshot: null,
+        repoRoot: '.',
       },
       'fixture',
     )

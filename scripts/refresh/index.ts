@@ -38,6 +38,8 @@ export type RefreshDeps = {
   readonly now: () => string
   /** Passed explicitly at the composition root — 100 in real mode, 40 in fixture mode. */
   readonly minExpectedAaModels: number
+  /** Resolved repo root, so the snapshot is written where the previous one was read from. */
+  readonly repoRoot: string
   /** Hand-written exceptions to the derived mapping. Normally empty. */
   readonly overrides: Overrides
   /** The snapshot on disk before this run, for change reporting. Null on a first run. */
@@ -54,7 +56,7 @@ export type RefreshOutcome =
   | { readonly kind: 'error'; readonly message: string }
 
 export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<RefreshOutcome> {
-  const { transport, files, now, minExpectedAaModels, overrides, previousSnapshot } = deps
+  const { transport, files, now, minExpectedAaModels, overrides, previousSnapshot, repoRoot } = deps
 
   try {
     // Three independent hosts, so the AA pagination and the two Cursor documents overlap
@@ -84,7 +86,7 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
       unmatched: [...joinResult.unresolved],
       models: [...joinResult.rows],
     }
-    await writeSnapshot(snapshot, files)
+    await writeSnapshot(snapshot, files, repoRoot)
     const lines = buildReport(snapshot, aaResult.rateLimitRemaining)
     const changes = diffSnapshots(previousSnapshot, snapshot.models)
     return {
@@ -93,7 +95,9 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
       changeLines: buildChangeReport(changes, resolved.unusedOverrides),
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : JSON.stringify(error)
+    // Not JSON.stringify: it returns undefined for a function or symbol and throws on a
+    // circular structure — inside a catch, which would turn a handled failure into a crash.
+    const message = error instanceof Error ? error.message : String(error)
     const name = error instanceof Error ? error.name : 'UnknownError'
     return { kind: 'error', message: name === 'Error' ? message : `${name}: ${message}` }
   }
@@ -103,10 +107,13 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
  *  CI — indefinitely. Every request gets one whether the caller passes a signal or not. */
 const REQUEST_TIMEOUT_MS = 30_000
 
-const httpTransport: Transport = async (url, headers, signal) => {
+export const httpTransport: Transport = async (url, headers, signal) => {
+  // Composed, not alternated: a caller-supplied signal adds cancellation, it must not
+  // remove the deadline.
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   const response = await fetch(url, {
     headers,
-    signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: signal === undefined ? timeout : AbortSignal.any([signal, timeout]),
   })
   const responseHeaders: Record<string, string> = {}
   response.headers.forEach((value, key) => {
@@ -163,6 +170,7 @@ async function main(): Promise<void> {
       files,
       now: () => new Date().toISOString(),
       minExpectedAaModels,
+      repoRoot,
       overrides,
       previousSnapshot: await readPreviousSnapshot(path.join(repoRoot, SNAPSHOT_PATH)),
     },

@@ -183,6 +183,23 @@ describe('parseCursorMarkdown', () => {
     expect(cell('0')).toBe(0)
   })
 
+  test('13d — a format change in one price column is caught, not absorbed', async () => {
+    const markdown = await loadFixture('cursor-models.fixture.md')
+    const broken = markdown
+      .split('\n')
+      .map((line) => {
+        const cells = line.split('|')
+        if (cells.length !== 9 || line.includes('| Model ') || /^\|\s*-/.test(line)) {
+          return line
+        }
+        cells[6] = cells[6]!.replace(/\$([\d.]+)/, '$$$1/M')
+        return cells.join('|')
+      })
+      .join('\n')
+
+    expectCursorMarkdownError(() => parseCursorMarkdown(broken), /readable output price/)
+  })
+
   test('14 — the Plans table on the same page contributes 0 rows', async () => {
     const markdown = await loadFixture('cursor-models.fixture.md')
 

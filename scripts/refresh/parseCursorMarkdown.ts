@@ -63,6 +63,10 @@ function stripModelLink(cell: string): string {
  *  null and `resolvePrices` throws naming it. */
 const PRICE_PATTERN = /^\d+(?:\.\d+)?$/
 
+/** The per-column ratio check below needs a real catalogue to be meaningful; a hand-built
+ *  unit fixture of one or two rows says nothing about upstream's format. */
+const COLUMN_SAMPLE_FLOOR = 20
+
 function parsePrice(cell: string): number | null {
   const trimmed = cell.trim()
   const withoutDollar = trimmed.startsWith('$') ? trimmed.slice(1).trim() : trimmed
@@ -151,6 +155,20 @@ export function parseCursorMarkdown(markdown: string, minRows = 20): readonly Cu
     }
     seen.add(row.name)
     deduped.push(row)
+  }
+
+  // A per-column floor. The whole-row case is caught downstream by `resolvePrices`, but a
+  // format change in ONE column (say `$15/M` in Output) leaves every other column parsing,
+  // so nothing throws and the affected cost axis silently goes blank across the catalogue.
+  if (deduped.length >= COLUMN_SAMPLE_FLOOR) {
+    for (const column of ['input', 'output'] as const) {
+      const present = deduped.filter((row) => row[column] !== null).length
+      if (present * 2 < deduped.length) {
+        throw new CursorMarkdownError(
+          `only ${String(present)} of ${String(deduped.length)} rows have a readable ${column} price — the column format looks changed`,
+        )
+      }
+    }
   }
 
   if (deduped.length < minRows) {
