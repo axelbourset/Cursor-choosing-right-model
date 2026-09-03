@@ -11,12 +11,14 @@ function validSnapshot(): Snapshot {
       attribution: 'Artificial Analysis (artificialanalysis.ai)',
     },
     coverage: {
-      totalRows: 47,
-      resolved: 43,
-      intelligence: 43,
-      coding: 31,
-      agentic: 31,
-      aaCostPerTask: 29,
+      // Consistent with the single row below: snapshotSchema now rejects a coverage block
+      // that contradicts models.length.
+      totalRows: 1,
+      resolved: 1,
+      intelligence: 1,
+      coding: 1,
+      agentic: 1,
+      aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
     models: [
@@ -42,12 +44,30 @@ function validSnapshot(): Snapshot {
 }
 
 describe('findViolations', () => {
-  test('1 — built dist asset with cursorSlug and aaVariantNote literals', () => {
-    const violations = findViolations(
-      { tracked: [], built: ['dist/assets/app.js'] },
-      () => '{"cursorSlug":"x","aaVariantNote":"y"}',
-    )
+  test('1 — a bundled snapshot is caught even with unquoted keys', () => {
+    // The shape a bundler actually emits. The old check looked for `"cursorSlug"` with
+    // JSON quotes and fell back to JSON.parse — neither matches a JS chunk, so a Vite
+    // bundle carrying all 49 models passed silently.
+    const bundled = `var e=[${Array.from(
+      { length: 49 },
+      (_, i) => `{cursorSlug:\`m-${String(i)}\`,aaVariantNote:\`auto\`,priceCacheWrite:null}`,
+    ).join(',')}];`
+
+    const violations = findViolations({ tracked: [], built: ['dist/assets/app.js'] }, () => bundled)
+
     expect(violations).toHaveLength(1)
+    expect(violations[0]!.reason).toMatch(/embedded catalogue data/)
+  })
+
+  test('1b — a source file naming the fields a few times is not a violation', () => {
+    const source = `
+      const a = row.cursorSlug
+      const b = row.aaVariantNote
+      const c = row.priceCacheWrite
+      export type X = { cursorSlug: string; aaVariantNote: string | null }
+    `
+
+    expect(findViolations({ tracked: ['src/x.ts'], built: [] }, () => source)).toHaveLength(0)
   })
 
   test('2 — built dist asset containing a full real-shaped snapshot', () => {

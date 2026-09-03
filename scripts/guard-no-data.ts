@@ -29,17 +29,46 @@ const API_KEY_VALUE_PATTERN = /api[_-]?key["']?\s*[:=,]\s*["'][A-Za-z0-9_-]{20,}
  *  Anchored on the import keyword on purpose: a bare string containing `data/` is a path
  *  constant, not a dependency — `schema/snapshot.ts` legitimately exports one. */
 const DATA_IMPORT_PATTERN =
-  /(?:\bfrom|\bimport|\brequire)\s*\(?\s*['"][^'"]*(?:^|[/@])data\/[^'"]*['"]/
+  /(?:\bfrom|\bimport|\brequire)\s*\(?\s*['"`](?:[^'"`]*[/@])?data\/[^'"`]*['"`]/
 
 /** Read as text only where text is plausible; dist/ carries font and image binaries. */
 const BINARY_EXTENSIONS =
   /\.(?:woff2?|ttf|eot|otf|png|jpe?g|gif|webp|avif|ico|mp4|webm|pdf|zip|gz)$/i
 
-function checkSnapshotShape(path: string, content: string): GuardViolation | null {
-  if (content.includes('"cursorSlug"') && content.includes('"aaVariantNote"')) {
-    return {
-      path,
-      reason: 'contains serialized snapshot field names',
+/** Field names as a bundler emits them: `cursorSlug:`, `"cursorSlug":` and `'cursorSlug':`
+ *  all count. The previous check looked only for the double-quoted JSON form, which no
+ *  bundler produces — a Vite chunk carrying all 49 models passed it silently. */
+const SNAPSHOT_FIELD_PATTERNS = [/\bcursorSlug\b/g, /\baaVariantNote\b/g, /\bpriceCacheWrite\b/g]
+
+/** A serialised catalogue repeats these once per model. Measured on this repo: the busiest
+ *  legitimate source file (`join.ts`) reaches 8 and a hand-built test fixture 17, while a
+ *  bundle carrying the snapshot hits 49 — so 20 separates them with room either side. */
+const SNAPSHOT_FIELD_REPEAT_LIMIT = 20
+
+/** Tests the pattern per line, skipping comment lines, so prose that quotes an import (this
+ *  file's own doc comments included) is not mistaken for one. */
+function hasDataImport(content: string): boolean {
+  return content.split('\n').some((line) => {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+      return false
+    }
+    return DATA_IMPORT_PATTERN.test(line)
+  })
+}
+
+function checkSnapshotShape(
+  path: string,
+  content: string,
+  countRepeats: boolean,
+): GuardViolation | null {
+  for (const pattern of countRepeats ? SNAPSHOT_FIELD_PATTERNS : []) {
+    const count = (content.match(pattern) ?? []).length
+    if (count >= SNAPSHOT_FIELD_REPEAT_LIMIT) {
+      return {
+        path,
+        reason: `repeats the snapshot field ${pattern.source} ${String(count)} times — looks like embedded catalogue data`,
+      }
     }
   }
 
@@ -49,7 +78,7 @@ function checkSnapshotShape(path: string, content: string): GuardViolation | nul
       return { path, reason: 'valid snapshot JSON' }
     }
   } catch {
-    // not JSON — other rules may still apply
+    // not JSON — the repeat check above is what catches a bundled snapshot
   }
 
   return null
@@ -94,7 +123,7 @@ export function findViolations(
       /^(?:src|domain|schema)\//.test(path) &&
       /\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(path)
     ) {
-      if (DATA_IMPORT_PATTERN.test(getContent())) {
+      if (hasDataImport(getContent())) {
         violations.push({
           path,
           reason: 'first-party source must not import from data/',
@@ -125,7 +154,10 @@ export function findViolations(
 
     const checkSnapshot = isBuilt || (isTracked && !path.startsWith('fixtures/'))
     if (checkSnapshot) {
-      const shapeViolation = checkSnapshotShape(path, getContent())
+      // Test files legitimately build many rows by hand, so the repeat heuristic is for
+      // build output and non-test source only. The JSON/schema check still applies to both.
+      const countRepeats = isBuilt || !/\.test\.tsx?$/.test(path)
+      const shapeViolation = checkSnapshotShape(path, getContent(), countRepeats)
       if (shapeViolation) {
         violations.push(shapeViolation)
       }

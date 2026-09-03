@@ -25,10 +25,9 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run build
-      # After the build: the guard's dist/ rules are the ones that matter here, and
-      # dist/ is gitignored so it does not exist until build has run.
-      - run: npm run guard
+      # Lint, depcruise, tests, build and guard. Deploy previously ran build+guard only, so
+      # a red test suite still published.
+      - run: npm run verify
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
