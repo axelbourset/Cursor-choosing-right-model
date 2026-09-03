@@ -6,8 +6,10 @@ import type { ModelRow } from '@schema/snapshot'
  *  to apply its empty styling, which coupled two files through a display character. */
 export type Cell = { readonly kind: 'value'; readonly text: string } | { readonly kind: 'missing' }
 
+/** What a `missing` cell renders as. The renderer branches on `Cell.kind`, not on this. */
 export const MISSING_TEXT = '—'
 
+/** One table column: its sort key, header label, alignment and cell formatter. */
 export type Column = {
   readonly key: SortKey
   readonly label: string
@@ -23,6 +25,7 @@ function formatString(value: string): Cell {
   return { kind: 'value', text: value }
 }
 
+/** The table's columns, in display order. */
 export const COLUMNS: readonly Column[] = [
   {
     key: 'cursorName',

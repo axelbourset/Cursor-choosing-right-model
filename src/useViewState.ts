@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import type { CostAxisKey, MetricKey } from '@schema/snapshot'
 import { DEFAULT_FILTERS, type Filters } from '@domain/selection'
 
+/** The user's current view: which metric, cost axis, filters and frontier toggle. */
 export type ViewState = {
   readonly filters: Filters
   readonly metric: MetricKey
@@ -16,7 +17,11 @@ const INITIAL_STATE: ViewState = {
   showFrontier: true,
 }
 
-export function useViewState(): { state: ViewState; set: (patch: Partial<ViewState>) => void } {
+/** Holds `ViewState` and merges partial updates into it. */
+export function useViewState(): {
+  readonly state: ViewState
+  readonly set: (patch: Partial<ViewState>) => void
+} {
   const [state, setState] = useState<ViewState>(INITIAL_STATE)
 
   const set = useCallback((patch: Partial<ViewState>) => {

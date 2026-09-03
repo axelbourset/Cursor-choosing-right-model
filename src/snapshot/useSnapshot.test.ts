@@ -13,12 +13,14 @@ function validSnapshot(): Snapshot {
       attribution: 'Artificial Analysis (artificialanalysis.ai)',
     },
     coverage: {
-      totalRows: 47,
-      resolved: 43,
-      intelligence: 43,
-      coding: 31,
-      agentic: 31,
-      aaCostPerTask: 29,
+      // Consistent with the single row below: snapshotSchema now rejects a coverage block
+      // that contradicts models.length.
+      totalRows: 1,
+      resolved: 1,
+      intelligence: 1,
+      coding: 1,
+      agentic: 1,
+      aaCostPerTask: 1,
     },
     unmatched: [],
     models: [
@@ -186,26 +188,48 @@ describe('useSnapshot', () => {
     vi.unstubAllGlobals()
   })
 
-  test('10 — a storage quota error surfaces as an invalid result', async () => {
-    const quotaStorage = {
-      get: () => null,
-      set: () => {
+  test('10 — a full localStorage keeps the snapshot and reports it as unsaved', async () => {
+    // Previously this fed '{}', which fails schema validation BEFORE storage is touched —
+    // so the assertion passed without the quota path ever running.
+    const valid = JSON.stringify(validSnapshot())
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
         throw new Error('QuotaExceededError')
       },
-      remove: () => undefined,
-    }
-    vi.stubGlobal('localStorage', {
-      getItem: quotaStorage.get,
-      setItem: quotaStorage.set,
-      removeItem: quotaStorage.remove,
+      removeItem: () => undefined,
     })
 
     const { result } = renderHook(() => useSnapshot())
     await act(async () => {
-      await result.current.acceptFile(new File(['{}'], 'x.json'))
+      await result.current.acceptFile(new File([valid], 'models.json'))
     })
 
-    expect(result.current.result.kind).toBe('invalid')
+    expect(result.current.result.kind).toBe('unsaved')
+    expect(result.current.lastGood).not.toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  test('11 — a failed local re-resolve does not wipe the stored snapshot', async () => {
+    const stored = JSON.stringify(validSnapshot())
+    const store = new Map([[STORAGE_KEY, stored]])
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => store.set(k, v),
+      removeItem: (k: string) => store.delete(k),
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('network down'))),
+    )
+
+    const { result } = renderHook(() => useSnapshot())
+    await act(async () => {
+      await result.current.useLocalFile()
+    })
+
+    // Storage is only cleared once the replacement has actually resolved.
+    expect(store.get(STORAGE_KEY)).toBe(stored)
     vi.unstubAllGlobals()
   })
 })

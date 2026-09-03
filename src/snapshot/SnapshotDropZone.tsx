@@ -49,6 +49,16 @@ function FileInput({ onFile }: { readonly onFile: (file: File) => void }) {
   )
 }
 
+/** The snapshot is loaded and usable; only persistence failed. Says so without implying the
+ *  file was bad. */
+function UnsavedNotice({ reason }: { readonly reason: string }) {
+  return (
+    <p className="dropzone__unsaved" role="status">
+      Loaded, but not saved for next time ({reason}). Drop the file again after reloading.
+    </p>
+  )
+}
+
 function EmptyContent() {
   return (
     <div className="dropzone__guide">
@@ -86,17 +96,23 @@ function StaleContent({ found, expected }: { readonly found: number; readonly ex
 }
 
 export function SnapshotDropZone({ result, lastGood, onFile, children }: SnapshotDropZoneProps) {
-  const showChildren = result.kind === 'ok' || (result.kind === 'invalid' && lastGood !== null)
+  const loaded = result.kind === 'ok' || result.kind === 'unsaved'
+  const showChildren = loaded || (result.kind === 'invalid' && lastGood !== null)
 
   // `loading` renders nothing at all: it is the state on mount, and showing the onboarding
   // guide there flashes "get an API key, git clone…" at users who already have a snapshot.
   if (result.kind === 'loading') {
-    return <div className="dropzone dropzone--loading" aria-busy="true" />
+    return (
+      <div className="dropzone dropzone--loading" role="status" aria-busy="true">
+        <span className="dropzone__loading-label">Loading your snapshot…</span>
+      </div>
+    )
   }
 
   return (
-    <div className={result.kind === 'ok' ? undefined : 'dropzone'}>
-      {result.kind === 'ok' ? null : <FileInput onFile={onFile} />}
+    <div className={loaded ? undefined : 'dropzone'}>
+      {loaded ? null : <FileInput onFile={onFile} />}
+      {result.kind === 'unsaved' ? <UnsavedNotice reason={result.reason} /> : null}
       {result.kind === 'empty' ? <EmptyContent /> : null}
       {result.kind === 'invalid' ? <InvalidContent errors={result.errors} /> : null}
       {result.kind === 'stale' ? (

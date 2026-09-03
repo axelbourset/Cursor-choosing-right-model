@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import './styles.css'
 import type { Snapshot } from '@schema/snapshot'
 import type { SnapshotSource } from './snapshot/loadSnapshot'
@@ -102,11 +103,31 @@ function Footer() {
   )
 }
 
+/** A drop that misses the drop zone would otherwise navigate the browser away from the SPA,
+ *  discarding filters, sort and search. Swallowing it at the window keeps a stray drop inert. */
+function usePreventStrayDrops(): void {
+  useEffect(() => {
+    const swallow = (event: DragEvent) => {
+      event.preventDefault()
+    }
+    window.addEventListener('dragover', swallow)
+    window.addEventListener('drop', swallow)
+    return () => {
+      window.removeEventListener('dragover', swallow)
+      window.removeEventListener('drop', swallow)
+    }
+  }, [])
+}
+
 export function App() {
+  usePreventStrayDrops()
   const snapshotHook = useSnapshot()
   const { state, set } = useViewState()
 
-  const okResult = snapshotHook.result.kind === 'ok' ? snapshotHook.result : null
+  const okResult =
+    snapshotHook.result.kind === 'ok' || snapshotHook.result.kind === 'unsaved'
+      ? snapshotHook.result
+      : null
   const rows = okResult?.snapshot.models ?? []
   const providers = [...new Set(rows.map((row) => row.provider))].sort()
 

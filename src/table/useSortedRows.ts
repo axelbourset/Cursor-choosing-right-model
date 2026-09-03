@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { nextDirection, sortRows, type SortDirection, type SortKey } from '@domain/sort'
 import type { ModelRow } from '@schema/snapshot'
 
+/** Sorts rows by the active column, and cycles asc/desc when a header is clicked. */
 export function useSortedRows(rows: readonly ModelRow[]): {
   readonly sorted: readonly ModelRow[]
   readonly sortKey: SortKey

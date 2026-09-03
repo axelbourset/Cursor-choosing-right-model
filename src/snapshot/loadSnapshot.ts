@@ -10,6 +10,14 @@ export type LoadResult =
   | { readonly kind: 'loading' }
   | { readonly kind: 'empty' }
   | { readonly kind: 'invalid'; readonly errors: readonly string[] }
+  /** The file parsed, but could not be persisted (quota, private browsing). The snapshot is
+   *  good and is shown; only the "remember it" half failed. */
+  | {
+      readonly kind: 'unsaved'
+      readonly snapshot: Snapshot
+      readonly source: SnapshotSource
+      readonly reason: string
+    }
   | { readonly kind: 'stale'; readonly found: number; readonly expected: number }
 
 export const STORAGE_KEY = 'cursor-model-picker:snapshot'
@@ -92,13 +100,22 @@ export async function loadSnapshot(
   return { kind: 'empty' }
 }
 
-/** Validates, and only on success writes to storage. Returns the result either way. */
+/** Validates, then tries to persist. A storage failure downgrades to `unsaved` rather than
+ *  discarding a snapshot that parsed perfectly well — Safari private browsing throws on
+ *  every setItem, and a large snapshot exceeds the ~5MB quota. */
 export function storeDroppedSnapshot(raw: string, storage: StoragePort): LoadResult {
   const result = parseSnapshot(raw, 'dropped')
-  if (result.kind === 'ok') {
-    storage.set(STORAGE_KEY, raw)
+  if (result.kind !== 'ok') {
+    return result
   }
-  return result
+
+  try {
+    storage.set(STORAGE_KEY, raw)
+    return result
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    return { kind: 'unsaved', snapshot: result.snapshot, source: result.source, reason }
+  }
 }
 
 export function clearStoredSnapshot(storage: StoragePort): void {

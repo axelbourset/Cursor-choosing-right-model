@@ -13,12 +13,14 @@ function validSnapshot(): Snapshot {
       attribution: 'Artificial Analysis (artificialanalysis.ai)',
     },
     coverage: {
-      totalRows: 47,
-      resolved: 43,
-      intelligence: 43,
-      coding: 31,
-      agentic: 31,
-      aaCostPerTask: 29,
+      // Consistent with the single row below: snapshotSchema now rejects a coverage block
+      // that contradicts models.length.
+      totalRows: 1,
+      resolved: 1,
+      intelligence: 1,
+      coding: 1,
+      agentic: 1,
+      aaCostPerTask: 1,
     },
     unmatched: [],
     models: [
@@ -140,7 +142,7 @@ describe('SnapshotDropZone', () => {
     expect(screen.queryByText('child content')).not.toBeInTheDocument()
   })
 
-  test('13 — dropping a file on the visible target calls onFile', () => {
+  test('16 — dropping a file on the visible target calls onFile', () => {
     // The handlers used to live on the <input>, which styles.css clips to 1x1, so a drop on
     // the panel never reached them and the browser navigated away instead.
     const onFile = vi.fn()
@@ -160,7 +162,7 @@ describe('SnapshotDropZone', () => {
     expect(onFile.mock.calls[0]![0]).toBe(file)
   })
 
-  test('14 — dragover is prevented so the browser does not navigate away', () => {
+  test('17 — dragover is prevented so the browser does not navigate away', () => {
     render(
       <SnapshotDropZone result={{ kind: 'empty' }} lastGood={null} onFile={vi.fn()}>
         <div />
@@ -174,7 +176,7 @@ describe('SnapshotDropZone', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  test('15 — the loading state renders neither the guide nor the drop target', () => {
+  test('18 — the loading state renders neither the guide nor the drop target', () => {
     render(
       <SnapshotDropZone result={{ kind: 'loading' }} lastGood={null} onFile={vi.fn()}>
         <div />

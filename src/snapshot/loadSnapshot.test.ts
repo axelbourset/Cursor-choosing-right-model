@@ -18,12 +18,14 @@ function validSnapshot(): Snapshot {
       attribution: 'Artificial Analysis (artificialanalysis.ai)',
     },
     coverage: {
-      totalRows: 47,
-      resolved: 43,
-      intelligence: 43,
-      coding: 31,
-      agentic: 31,
-      aaCostPerTask: 29,
+      // Consistent with the single row below: snapshotSchema now rejects a coverage block
+      // that contradicts models.length.
+      totalRows: 1,
+      resolved: 1,
+      intelligence: 1,
+      coding: 1,
+      agentic: 1,
+      aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
     models: [

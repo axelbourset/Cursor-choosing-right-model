@@ -284,4 +284,19 @@ describe('ModelTable', () => {
     const table = screen.getByRole('table')
     expect(table.querySelector('caption') ?? table.getAttribute('aria-label')).toBeTruthy()
   })
+
+  test('sorted column announces direction via aria-sort', () => {
+    const { container } = render(<ModelTable rows={[makeRow({ cursorName: 'A' })]} />)
+
+    const modelHeader = screen.getAllByRole('columnheader')[0]!
+    expect(modelHeader).toHaveAttribute('aria-sort', 'none')
+
+    // A newly-selected column starts descending, then toggles.
+    fireEvent.click(within(modelHeader).getByRole('button'))
+    expect(screen.getAllByRole('columnheader')[0]!).toHaveAttribute('aria-sort', 'descending')
+
+    fireEvent.click(within(screen.getAllByRole('columnheader')[0]!).getByRole('button'))
+    expect(screen.getAllByRole('columnheader')[0]!).toHaveAttribute('aria-sort', 'ascending')
+    expect(container).toBeTruthy()
+  })
 })

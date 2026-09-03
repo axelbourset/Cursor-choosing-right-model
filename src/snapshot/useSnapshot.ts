@@ -30,10 +30,24 @@ function createLocalStoragePort(): StoragePort {
 }
 
 async function fetchLocalSnapshot(): Promise<string | null> {
+  // Dev-server middleware only (vite.plugins.ts is `apply: 'serve'`). On a host with an SPA
+  // catch-all this path returns index.html with status 200, and JSON.parse would report
+  // "Unexpected token '<'" to a first-time visitor instead of the onboarding guide.
+  if (import.meta.env.PROD) {
+    return null
+  }
+
   const response = await fetch(SNAPSHOT_DEV_URL)
   if (!response.ok) {
     return null
   }
+
+  // A host with an SPA catch-all answers this route with index.html and status 200; treat
+  // that as "no local snapshot" rather than letting JSON.parse report a syntax error.
+  if (response.headers.get('content-type')?.includes('text/html') === true) {
+    return null
+  }
+
   return response.text()
 }
 
@@ -64,15 +78,6 @@ export function useSnapshot(): UseSnapshot {
   const [result, setResult] = useState<LoadResult>({ kind: 'loading' })
   const [lastGood, setLastGood] = useState<Snapshot | null>(null)
 
-  const resolveSnapshot = useCallback(async () => {
-    const loaded = await loadSnapshot(storage, fetchLocalSnapshot)
-    setResult(loaded)
-    if (loaded.kind === 'ok') {
-      setLastGood(loaded.snapshot)
-    }
-    return loaded
-  }, [storage])
-
   useEffect(() => {
     let cancelled = false
     const run = async () => {
@@ -97,27 +102,42 @@ export function useSnapshot(): UseSnapshot {
 
   const acceptFile = useCallback(
     async (file: File) => {
-      // Total by construction: a failed read, or a localStorage quota error on a large
-      // snapshot, must surface in the UI rather than as an unhandled rejection nobody sees.
+      // The try covers the READ only. A storage failure is handled inside
+      // storeDroppedSnapshot, which downgrades to `unsaved` — wrapping it here meant a
+      // valid snapshot was thrown away and reported as an invalid file.
+      let raw: string
       try {
-        const raw = await readFileAsText(file)
-        const stored = storeDroppedSnapshot(raw, storage)
-        setResult(stored)
-        if (stored.kind === 'ok') {
-          setLastGood(stored.snapshot)
-        }
+        raw = await readFileAsText(file)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         setResult({ kind: 'invalid', errors: [`Could not read that file: ${message}`] })
+        return
+      }
+
+      const stored = storeDroppedSnapshot(raw, storage)
+      setResult(stored)
+      if (stored.kind === 'ok' || stored.kind === 'unsaved') {
+        setLastGood(stored.snapshot)
       }
     },
     [storage],
   )
 
   const useLocalFile = useCallback(async () => {
-    clearStoredSnapshot(storage)
-    await resolveSnapshot()
-  }, [resolveSnapshot, storage])
+    // Resolve BEFORE clearing: clearing first and then failing the fetch wiped the user's
+    // snapshot and left the screen unchanged, with no way back.
+    try {
+      const loaded = await loadSnapshot({ ...storage, get: () => null }, fetchLocalSnapshot)
+      clearStoredSnapshot(storage)
+      setResult(loaded)
+      if (loaded.kind === 'ok') {
+        setLastGood(loaded.snapshot)
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      setResult({ kind: 'invalid', errors: [`Could not load the local snapshot: ${message}`] })
+    }
+  }, [storage])
 
   const clear = useCallback(() => {
     clearStoredSnapshot(storage)
