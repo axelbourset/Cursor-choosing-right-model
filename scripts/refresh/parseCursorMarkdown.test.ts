@@ -163,6 +163,26 @@ describe('parseCursorMarkdown', () => {
     expect(rows[0]!.output).toBe(30)
   })
 
+  test('13c — a bare $ is null, never 0, and numeric literals are not accepted', async () => {
+    const cell = (value: string) => {
+      const markdown = [
+        '| Model | Provider | Input | Cache write | Cache read | Output | Notes |',
+        '| --- | --- | --- | --- | --- | --- | --- |',
+        `| M | P | ${value} | - | $1 | $30 | - |`,
+      ].join('\n')
+      return parseCursorMarkdown(markdown, 1)[0]!.input
+    }
+
+    // A zero substituted for missing data is the one thing this codebase must never do.
+    expect(cell('$')).toBeNull()
+    expect(cell('  $  ')).toBeNull()
+    expect(cell('0x10')).toBeNull()
+    expect(cell('1e3')).toBeNull()
+    expect(cell('$1,250')).toBeNull()
+    expect(cell('$2.5')).toBe(2.5)
+    expect(cell('0')).toBe(0)
+  })
+
   test('14 — the Plans table on the same page contributes 0 rows', async () => {
     const markdown = await loadFixture('cursor-models.fixture.md')
 

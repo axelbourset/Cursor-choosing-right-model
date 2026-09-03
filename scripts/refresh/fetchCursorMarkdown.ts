@@ -1,12 +1,14 @@
 import type { Transport } from './transport'
 
-export class CursorMarkdownFetchError extends Error {}
+export class CursorMarkdownFetchError extends Error {
+  override name = 'CursorMarkdownFetchError'
+}
 
 export const CURSOR_MARKDOWN_URL = 'https://cursor.com/docs/models-and-pricing.md'
 
 export async function fetchCursorMarkdown(
   transport: Transport,
-  minBytes = 10_000,
+  minLength = 10_000,
 ): Promise<string> {
   const response = await transport(CURSOR_MARKDOWN_URL, {})
 
@@ -16,8 +18,8 @@ export async function fetchCursorMarkdown(
 
   const body = await response.text()
 
-  if (body.length < minBytes) {
-    throw new CursorMarkdownFetchError(`body length ${body.length} below floor ${minBytes}`)
+  if (body.length < minLength) {
+    throw new CursorMarkdownFetchError(`body length ${body.length} below floor ${minLength}`)
   }
 
   return body

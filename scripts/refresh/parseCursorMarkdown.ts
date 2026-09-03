@@ -7,7 +7,9 @@ export type CursorCatalogueRow = {
   readonly cacheRead: number | null
   readonly output: number | null
 }
-export class CursorMarkdownError extends Error {}
+export class CursorMarkdownError extends Error {
+  override name = 'CursorMarkdownError'
+}
 
 const HEADER_COLUMNS = [
   'Model',
@@ -45,24 +47,29 @@ function isSeparatorRow(line: string): boolean {
 }
 
 function stripModelLink(cell: string): string {
-  const match = cell.match(/^\[([^\]]+)\]\([^)]*\)$/)
+  const match = /^\[([^\]]+)\]\([^)]*\)$/.exec(cell)
   return match?.[1] ?? cell
 }
 
-/** `Number()` returns NaN rather than failing, and NaN typed as `number` is an inaccurate
- *  type: it defeats the `no price source` guard (which tests `!== null`) and then fails
- *  snapshot validation with a message naming an array index instead of a model.
+/** `Number()` accepts far more than a price: it returns NaN for prose, 0 for the empty
+ *  string left behind by a bare `$`, and happily parses `0x10` as 16 and `1e3` as 1000.
+ *  A NaN typed as `number` defeats the `no price source` guard and then fails snapshot
+ *  validation; a 0 is worse still, because zero is exactly what this codebase must never
+ *  substitute for missing data.
  *
- *  An unreadable cell becomes null — "not measured", the value the schema already models —
- *  so one odd cell degrades that single price instead of the run. A wholesale format change
- *  is still loud: every price for a model turns null, and `resolvePrices` throws naming it. */
+ *  So the shape is validated before conversion. An unreadable cell becomes null — "not
+ *  measured", the value the schema already models — which degrades that one price rather
+ *  than the run. A wholesale format change is still loud: every price for a model turns
+ *  null and `resolvePrices` throws naming it. */
+const PRICE_PATTERN = /^\d+(?:\.\d+)?$/
+
 function parsePrice(cell: string): number | null {
   const trimmed = cell.trim()
-  if (trimmed === '' || trimmed === '-') {
+  const withoutDollar = trimmed.startsWith('$') ? trimmed.slice(1).trim() : trimmed
+  if (!PRICE_PATTERN.test(withoutDollar)) {
     return null
   }
 
-  const withoutDollar = trimmed.startsWith('$') ? trimmed.slice(1) : trimmed
   const value = Number(withoutDollar)
   return Number.isFinite(value) ? value : null
 }

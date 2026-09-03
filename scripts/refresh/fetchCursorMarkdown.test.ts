@@ -18,10 +18,10 @@ type ResponseSpec = {
 
 function createTransport(specs: readonly ResponseSpec[]): {
   transport: Transport
-  calls: Array<{ url: string; headers: Readonly<Record<string, string>> }>
+  calls: { url: string; headers: Readonly<Record<string, string>> }[]
   jsonCalled: boolean
 } {
-  const calls: Array<{ url: string; headers: Readonly<Record<string, string>> }> = []
+  const calls: { url: string; headers: Readonly<Record<string, string>> }[] = []
   let jsonCalled = false
   let index = 0
 
