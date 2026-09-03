@@ -166,7 +166,7 @@ describe('computePareto properties', () => {
     }
     const result = computePareto(rows, 'intelligence')
     const eligible = rows.filter((r) => r.intelligence !== null && r.priceInput !== null)
-    const maxScore = Math.max(...eligible.map((r) => r.intelligence as number))
+    const maxScore = Math.max(...eligible.map((r) => r.intelligence!))
     const maxRow = eligible.find((r) => r.intelligence === maxScore)!
     expect(isOnFrontier(maxRow, result)).toBe(true)
     assertPartition(result, rows.length)

@@ -91,10 +91,32 @@ describe('writeSnapshot', () => {
 
     await writeSnapshot(validSnapshot(), writer)
 
-    expect(calls.writeFile).toEqual([
-      { path: 'data/models.json.tmp', data: JSON.stringify(validSnapshot(), null, 2) },
-    ])
-    expect(calls.rename).toEqual([{ from: 'data/models.json.tmp', to: 'data/models.json' }])
+    // The temp name carries a pid and uuid so concurrent runs cannot collide, so assert the
+    // shape and that write/rename agree on it rather than pinning a literal.
+    expect(calls.writeFile).toHaveLength(1)
+    const tmpPath = calls.writeFile[0]!.path
+    expect(tmpPath).toMatch(/^data\/models\.json\.\d+\.[0-9a-f-]{36}\.tmp$/)
+    expect(calls.writeFile[0]!.data).toBe(JSON.stringify(validSnapshot(), null, 2))
+    expect(calls.rename).toEqual([{ from: tmpPath, to: 'data/models.json' }])
+  })
+
+  test('1b — two runs never share a temp path', async () => {
+    const first = createFakeWriter()
+    const second = createFakeWriter()
+
+    await writeSnapshot(validSnapshot(), first.writer)
+    await writeSnapshot(validSnapshot(), second.writer)
+
+    expect(first.calls.writeFile[0]!.path).not.toBe(second.calls.writeFile[0]!.path)
+  })
+
+  test('1c — unknown fields are stripped, not written to disk', async () => {
+    const { writer, calls } = createFakeWriter()
+    const withExtra = { ...validSnapshot(), sneaky: 'value' } as unknown as Snapshot
+
+    await writeSnapshot(withExtra, writer)
+
+    expect(calls.writeFile[0]!.data).not.toContain('sneaky')
   })
 
   test('2 — call order in #1', async () => {
@@ -142,7 +164,7 @@ describe('writeSnapshot', () => {
 
     await expect(writeSnapshot(validSnapshot(), writer)).rejects.toThrow(SnapshotWriteError)
     expect(calls.rename).toHaveLength(0)
-    expect(calls.unlink).toEqual(['data/models.json.tmp'])
+    expect(calls.unlink).toEqual([calls.writeFile[0]!.path])
   })
 
   test('6 — rename rejects', async () => {
@@ -153,7 +175,7 @@ describe('writeSnapshot', () => {
     })
 
     await expect(writeSnapshot(validSnapshot(), writer)).rejects.toThrow(SnapshotWriteError)
-    expect(calls.unlink).toEqual(['data/models.json.tmp'])
+    expect(calls.unlink).toEqual([calls.writeFile[0]!.path])
   })
 
   test('7 — the written JSON', async () => {

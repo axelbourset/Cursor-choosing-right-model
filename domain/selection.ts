@@ -1,16 +1,6 @@
 import type { CostAxisKey, ModelRow, MetricKey } from '@schema/snapshot'
-import { computePareto } from './pareto'
-
-function priceForAxis(row: ModelRow, costAxis: CostAxisKey): number | null {
-  switch (costAxis) {
-    case 'input':
-      return row.priceInput
-    case 'output':
-      return row.priceOutput
-    case 'cacheRead':
-      return row.priceCacheRead
-  }
-}
+import { computePareto, type ParetoResult } from './pareto'
+import { priceForAxis } from './price'
 
 function hasPlottableCost(row: ModelRow, costAxis: CostAxisKey): boolean {
   const price = priceForAxis(row, costAxis)
@@ -55,7 +45,7 @@ export type PlottableSelection = {
   readonly filtered: readonly ModelRow[]
   /** Rows with the active metric and a positive cost on the active axis — eligible for the scatter. */
   readonly plottable: readonly ModelRow[]
-  readonly pareto: ReturnType<typeof computePareto>
+  readonly pareto: ParetoResult
   /** Rows actually drawn on the scatter (frontier only when `paretoOnly`). */
   readonly chartRows: readonly ModelRow[]
   readonly shown: number

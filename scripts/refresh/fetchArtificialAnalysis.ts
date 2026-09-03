@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { Transport } from './transport'
 
 export type AaModel = {
@@ -15,136 +16,54 @@ export type AaFetchResult = {
   readonly rateLimitRemaining: string | null
 }
 
-export class AaFetchError extends Error {}
+export class AaFetchError extends Error {
+  override name = 'AaFetchError'
+}
 
 const AA_FREE_MODELS_URL = 'https://artificialanalysis.ai/api/v2/language/models/free'
 
-const EVALUATION_KEYS = [
-  'artificial_analysis_intelligence_index',
-  'artificial_analysis_coding_index',
-  'artificial_analysis_agentic_index',
-] as const
+/** A hard stop independent of the upstream `total_pages`, so a response claiming a billion
+ *  pages cannot make this loop forever. */
+const MAX_PAGES = 50
 
-type AaPagination = {
-  readonly page: number
-  readonly page_size: number
-  readonly total_pages: number
-  readonly has_more: boolean
-}
+/** A score is absent, never zero. The keys must be PRESENT — a missing evaluation block is
+ *  a schema change worth failing on, whereas a null value is normal for an unbenchmarked
+ *  dimension. */
+const evaluationScore = z.number().nullable()
 
-type AaEnvelope = {
-  readonly intelligence_index_version: number
-  readonly pagination: AaPagination
-  readonly data: readonly unknown[]
-}
+const aaRecordSchema = z.object({
+  slug: z.string().min(1),
+  name: z.string().min(1),
+  evaluations: z.object({
+    artificial_analysis_intelligence_index: evaluationScore,
+    artificial_analysis_coding_index: evaluationScore,
+    artificial_analysis_agentic_index: evaluationScore,
+  }),
+  artificial_analysis_intelligence_index_cost: z
+    .object({ cost_per_task: z.object({ total_cost: z.number().nullish() }).nullish() })
+    .nullish(),
+})
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
+const aaEnvelopeSchema = z.object({
+  intelligence_index_version: z.number(),
+  pagination: z.object({
+    page: z.number(),
+    page_size: z.number(),
+    total_pages: z.number(),
+    has_more: z.boolean(),
+  }),
+  data: z.array(aaRecordSchema),
+})
 
-function parseEnvelope(body: unknown): AaEnvelope {
-  if (!isRecord(body)) {
-    throw new AaFetchError('invalid AA response envelope')
-  }
-
-  const pagination = body.pagination
-  if (!isRecord(pagination)) {
-    throw new AaFetchError('invalid AA pagination')
-  }
-
-  const data = body.data
-  if (!Array.isArray(data)) {
-    throw new AaFetchError('invalid AA data array')
-  }
-
-  const indexVersion = body.intelligence_index_version
-  if (typeof indexVersion !== 'number') {
-    throw new AaFetchError('invalid intelligence_index_version')
-  }
-
-  const page = pagination.page
-  const page_size = pagination.page_size
-  const total_pages = pagination.total_pages
-  const has_more = pagination.has_more
-
-  if (
-    typeof page !== 'number' ||
-    typeof page_size !== 'number' ||
-    typeof total_pages !== 'number' ||
-    typeof has_more !== 'boolean'
-  ) {
-    throw new AaFetchError('invalid AA pagination fields')
-  }
-
+function toAaModel(record: z.infer<typeof aaRecordSchema>): AaModel {
   return {
-    intelligence_index_version: indexVersion,
-    pagination: { page, page_size, total_pages, has_more },
-    data,
-  }
-}
-
-function mapAaModel(record: unknown): AaModel {
-  if (!isRecord(record)) {
-    throw new AaFetchError('invalid AA model record')
-  }
-
-  const slug = record.slug
-  const name = record.name
-  if (typeof slug !== 'string' || typeof name !== 'string') {
-    throw new AaFetchError('invalid AA model slug or name')
-  }
-
-  const evaluations = record.evaluations
-  if (!isRecord(evaluations)) {
-    throw new AaFetchError(`missing evaluations for ${slug}`)
-  }
-
-  for (const key of EVALUATION_KEYS) {
-    if (!(key in evaluations)) {
-      throw new AaFetchError(`missing evaluation key ${key} for ${slug}`)
-    }
-  }
-
-  const intelligence = evaluations.artificial_analysis_intelligence_index
-  const coding = evaluations.artificial_analysis_coding_index
-  const agentic = evaluations.artificial_analysis_agentic_index
-
-  if (
-    (intelligence !== null && typeof intelligence !== 'number') ||
-    (coding !== null && typeof coding !== 'number') ||
-    (agentic !== null && typeof agentic !== 'number')
-  ) {
-    throw new AaFetchError(`invalid evaluation values for ${slug}`)
-  }
-
-  const costRoot = record.artificial_analysis_intelligence_index_cost
-  let costPerTask: number | null = null
-  if (costRoot !== null && costRoot !== undefined) {
-    if (!isRecord(costRoot)) {
-      throw new AaFetchError(`invalid cost object for ${slug}`)
-    }
-    const costPerTaskRoot = costRoot.cost_per_task
-    if (costPerTaskRoot !== null && costPerTaskRoot !== undefined) {
-      if (!isRecord(costPerTaskRoot)) {
-        throw new AaFetchError(`invalid cost_per_task for ${slug}`)
-      }
-      const totalCost = costPerTaskRoot.total_cost
-      if (totalCost !== null && totalCost !== undefined) {
-        if (typeof totalCost !== 'number') {
-          throw new AaFetchError(`invalid total_cost for ${slug}`)
-        }
-        costPerTask = totalCost
-      }
-    }
-  }
-
-  return {
-    slug,
-    name,
-    intelligence,
-    coding,
-    agentic,
-    costPerTask,
+    slug: record.slug,
+    name: record.name,
+    intelligence: record.evaluations.artificial_analysis_intelligence_index,
+    coding: record.evaluations.artificial_analysis_coding_index,
+    agentic: record.evaluations.artificial_analysis_agentic_index,
+    costPerTask:
+      record.artificial_analysis_intelligence_index_cost?.cost_per_task?.total_cost ?? null,
   }
 }
 
@@ -156,48 +75,53 @@ export async function fetchArtificialAnalysis(
   const headers = { 'x-api-key': apiKey }
   const models: AaModel[] = []
   let indexVersion!: number
-  let rateLimitRemaining!: string | null
+  let rateLimitRemaining: string | null
   let page = 1
 
-  while (true) {
-    const url = `${AA_FREE_MODELS_URL}?page=${page}`
-    const response = await transport(url, headers)
+  for (;;) {
+    const response = await transport(`${AA_FREE_MODELS_URL}?page=${String(page)}`, headers)
 
     if (response.status !== 200) {
+      const detail = await response.text().catch(() => '')
+      const suffix = detail === '' ? '' : `: ${detail.slice(0, 200)}`
       if (response.status === 429) {
-        throw new AaFetchError(`rate limit: HTTP ${response.status}`)
+        throw new AaFetchError(`rate limit: HTTP ${String(response.status)}${suffix}`)
       }
-      throw new AaFetchError(`AA fetch failed with HTTP ${response.status}`)
+      throw new AaFetchError(`AA fetch failed with HTTP ${String(response.status)}${suffix}`)
     }
 
-    const envelope = parseEnvelope(await response.json())
+    const parsed = aaEnvelopeSchema.safeParse(await response.json())
+    if (!parsed.success) {
+      throw new AaFetchError(`invalid AA response on page ${String(page)}: ${parsed.error.message}`)
+    }
+
+    const envelope = parsed.data
     indexVersion = envelope.intelligence_index_version
+    models.push(...envelope.data.map(toAaModel))
 
-    for (const record of envelope.data) {
-      models.push(mapAaModel(record))
-    }
+    const { total_pages: totalPages, has_more: hasMore } = envelope.pagination
 
-    const { total_pages, has_more } = envelope.pagination
-
-    if (page >= total_pages && has_more) {
+    if (page >= totalPages && hasMore) {
       throw new AaFetchError('has_more true past total_pages')
     }
 
-    if (!has_more) {
+    if (!hasMore) {
       rateLimitRemaining = response.headers['x-ratelimit-remaining'] ?? null
       break
     }
 
     page += 1
+
+    if (page > MAX_PAGES) {
+      throw new AaFetchError(`pagination exceeded ${String(MAX_PAGES)} pages`)
+    }
   }
 
   if (models.length < minExpectedModels) {
-    throw new AaFetchError(`model count ${models.length} below floor ${minExpectedModels}`)
+    throw new AaFetchError(
+      `model count ${String(models.length)} below floor ${String(minExpectedModels)}`,
+    )
   }
 
-  return {
-    models,
-    indexVersion,
-    rateLimitRemaining,
-  }
+  return { models, indexVersion, rateLimitRemaining }
 }

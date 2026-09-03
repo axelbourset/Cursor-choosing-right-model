@@ -114,14 +114,14 @@ describe('buildReport', () => {
     const snapshot = makeSnapshot()
 
     const lines = buildReport(snapshot, '94')
-    expect(lines.some((line) => /rate limit remaining: 94/.test(line))).toBe(true)
+    expect(lines.some((line) => line.includes('rate limit remaining: 94'))).toBe(true)
   })
 
   test('6 — rateLimitRemaining: null', () => {
     const snapshot = makeSnapshot()
 
     const lines = buildReport(snapshot, null)
-    expect(lines.some((line) => /rate limit remaining: unknown/.test(line))).toBe(true)
+    expect(lines.some((line) => line.includes('rate limit remaining: unknown'))).toBe(true)
   })
 
   test('7 — the coverage numbers match computeCoverage(snapshot.models)', () => {
@@ -152,7 +152,7 @@ describe('buildReport', () => {
 
   test('8 — buildReport returns an array and prints nothing itself', () => {
     const snapshot = makeSnapshot()
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
     const lines = buildReport(snapshot, '94')
 

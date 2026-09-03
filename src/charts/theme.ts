@@ -11,7 +11,7 @@
  * duplication cannot drift silently.
  */
 
-export interface ChartTheme {
+export type ChartTheme = {
   /** The chart's page canvas — tooltip fills, anything that must melt into the page. */
   readonly canvas: string
   /** Ink — primary text (tooltip titles, strong values). */

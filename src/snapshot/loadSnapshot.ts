@@ -1,9 +1,13 @@
+import type { ZodError } from 'zod'
 import type { Snapshot } from '@schema/snapshot'
 import { CURRENT_SCHEMA_VERSION, snapshotSchema } from '@schema/snapshot'
 
 export type SnapshotSource = 'dropped' | 'local'
 export type LoadResult =
   | { readonly kind: 'ok'; readonly snapshot: Snapshot; readonly source: SnapshotSource }
+  /** Before the first resolution completes. Distinct from `empty`, which is a real answer:
+   *  rendering the onboarding guide during this state flashes it at returning users. */
+  | { readonly kind: 'loading' }
   | { readonly kind: 'empty' }
   | { readonly kind: 'invalid'; readonly errors: readonly string[] }
   | { readonly kind: 'stale'; readonly found: number; readonly expected: number }
@@ -16,9 +20,7 @@ export type StoragePort = {
   readonly remove: (key: string) => void
 }
 
-function formatZodErrors(error: {
-  issues: readonly { path: PropertyKey[]; message: string }[]
-}): string[] {
+function formatZodErrors(error: ZodError): string[] {
   return error.issues.map((issue) => {
     const path = issue.path.map(String).join('.')
     return path.length > 0 ? `${path}: ${issue.message}` : issue.message
@@ -29,7 +31,7 @@ function staleIfNeeded(parsed: unknown): LoadResult | null {
   if (typeof parsed !== 'object' || parsed === null) {
     return null
   }
-  const schemaVersion = (parsed as { schemaVersion?: unknown }).schemaVersion
+  const schemaVersion = 'schemaVersion' in parsed ? parsed.schemaVersion : undefined
   if (typeof schemaVersion === 'number' && schemaVersion !== CURRENT_SCHEMA_VERSION) {
     return { kind: 'stale', found: schemaVersion, expected: CURRENT_SCHEMA_VERSION }
   }

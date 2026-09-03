@@ -1,39 +1,21 @@
 import type { CostAxisKey, ModelRow, MetricKey } from '@schema/snapshot'
+import { toPricedRow, type PricedRow } from './price'
 
 export type ParetoResult = {
   /** Rows on the frontier, ascending by active cost axis. */
   readonly frontier: readonly ModelRow[]
+  /** The same rows as a set, so `isOnFrontier` is O(1) rather than O(n) per lookup. */
+  readonly frontierSet: ReadonlySet<ModelRow>
   /** Rows considered but dominated. */
   readonly dominated: readonly ModelRow[]
   /** Rows excluded because score or cost was null/zero. */
   readonly excluded: readonly ModelRow[]
 }
 
-function priceForAxis(row: ModelRow, costAxis: CostAxisKey): number | null {
-  switch (costAxis) {
-    case 'input':
-      return row.priceInput
-    case 'output':
-      return row.priceOutput
-    case 'cacheRead':
-      return row.priceCacheRead
-  }
-}
-
-function hasBothAxes(row: ModelRow, metric: MetricKey, costAxis: CostAxisKey): boolean {
-  const price = priceForAxis(row, costAxis)
-  return row[metric] !== null && price !== null && price > 0
-}
-
-function dominates(a: ModelRow, b: ModelRow, metric: MetricKey, costAxis: CostAxisKey): boolean {
-  const aScore = a[metric] as number
-  const bScore = b[metric] as number
-  const aCost = priceForAxis(a, costAxis) as number
-  const bCost = priceForAxis(b, costAxis) as number
-
-  const scoreAtLeast = aScore >= bScore
-  const costAtMost = aCost <= bCost
-  const strictlyBetter = aScore > bScore || aCost < bCost
+function dominates(a: PricedRow, b: PricedRow): boolean {
+  const scoreAtLeast = a.score >= b.score
+  const costAtMost = a.cost <= b.cost
+  const strictlyBetter = a.score > b.score || a.cost < b.cost
 
   return scoreAtLeast && costAtMost && strictlyBetter
 }
@@ -45,38 +27,57 @@ export function computePareto(
   costAxis: CostAxisKey = 'input',
 ): ParetoResult {
   const excluded: ModelRow[] = []
-  const eligible: ModelRow[] = []
+  const eligible: PricedRow[] = []
 
   for (const row of rows) {
-    if (hasBothAxes(row, metric, costAxis)) {
-      eligible.push(row)
-    } else {
+    const priced = toPricedRow(row, metric, costAxis)
+    if (priced === null) {
       excluded.push(row)
+    } else {
+      eligible.push(priced)
     }
   }
 
-  const frontier: ModelRow[] = []
+  const frontier: PricedRow[] = []
   const dominated: ModelRow[] = []
 
-  for (const row of eligible) {
-    const isDominated = eligible.some(
-      (other) => other !== row && dominates(other, row, metric, costAxis),
-    )
+  for (const priced of eligible) {
+    const isDominated = eligible.some((other) => other !== priced && dominates(other, priced))
     if (isDominated) {
-      dominated.push(row)
+      dominated.push(priced.row)
     } else {
-      frontier.push(row)
+      frontier.push(priced)
     }
   }
 
-  frontier.sort(
-    (a, b) => (priceForAxis(a, costAxis) as number) - (priceForAxis(b, costAxis) as number),
-  )
+  frontier.sort((a, b) => a.cost - b.cost)
 
-  return { frontier, dominated, excluded }
+  return {
+    frontier: frontier.map((priced) => priced.row),
+    frontierSet: new Set(frontier.map((priced) => priced.row)),
+    dominated,
+    excluded,
+  }
 }
 
-/** Convenience membership test. */
+/** Builds a result from parts, keeping `frontier` and `frontierSet` in step.
+ *
+ *  Callers that assemble a result by hand — the chart's paretoOnly view, and tests — must
+ *  go through this so the two representations cannot disagree. */
+export function makeParetoResult(parts: {
+  readonly frontier: readonly ModelRow[]
+  readonly dominated: readonly ModelRow[]
+  readonly excluded: readonly ModelRow[]
+}): ParetoResult {
+  return {
+    frontier: parts.frontier,
+    frontierSet: new Set(parts.frontier),
+    dominated: parts.dominated,
+    excluded: parts.excluded,
+  }
+}
+
+/** Convenience membership test. O(1) — the chart calls it once per row. */
 export function isOnFrontier(row: ModelRow, result: ParetoResult): boolean {
-  return result.frontier.some((r) => r === row)
+  return result.frontierSet.has(row)
 }

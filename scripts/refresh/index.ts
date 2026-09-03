@@ -2,7 +2,12 @@ import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { computeCoverage } from '@domain/coverage'
-import { snapshotSchema, type Snapshot } from '@schema/snapshot'
+import {
+  API_KEY_PLACEHOLDER,
+  CURRENT_SCHEMA_VERSION,
+  snapshotSchema,
+  type Snapshot,
+} from '@schema/snapshot'
 import { diffSnapshots } from './changes'
 import { fetchArtificialAnalysis } from './fetchArtificialAnalysis'
 import { fetchCursorMarkdown } from './fetchCursorMarkdown'
@@ -52,9 +57,13 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
   const { transport, files, now, minExpectedAaModels, overrides, previousSnapshot } = deps
 
   try {
-    const aaResult = await fetchArtificialAnalysis(apiKey, transport, minExpectedAaModels)
-    const pricing = await fetchCursorPricingJson(transport)
-    const markdown = await fetchCursorMarkdown(transport)
+    // Three independent hosts, so the AA pagination and the two Cursor documents overlap
+    // rather than summing.
+    const [aaResult, pricing, markdown] = await Promise.all([
+      fetchArtificialAnalysis(apiKey, transport, minExpectedAaModels),
+      fetchCursorPricingJson(transport),
+      fetchCursorMarkdown(transport),
+    ])
     const catalogue = parseCursorMarkdown(markdown)
     const resolved = resolveDeclarations(overrides, catalogue, aaResult.models)
     const joinResult = joinModels({
@@ -65,7 +74,7 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
     })
     const coverage = computeCoverage(joinResult.rows)
     const snapshot: Snapshot = {
-      schemaVersion: 1,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       generatedAt: now(),
       source: {
         aaIndexVersion: aaResult.indexVersion,
@@ -84,13 +93,21 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
       changeLines: buildChangeReport(changes, resolved.unusedOverrides),
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    return { kind: 'error', message }
+    const message = error instanceof Error ? error.message : JSON.stringify(error)
+    const name = error instanceof Error ? error.name : 'UnknownError'
+    return { kind: 'error', message: name === 'Error' ? message : `${name}: ${message}` }
   }
 }
 
-const httpTransport: Transport = async (url, headers) => {
-  const response = await fetch(url, { headers })
+/** Node's fetch has no response timeout, so a hung upstream would hang the refresh — and
+ *  CI — indefinitely. Every request gets one whether the caller passes a signal or not. */
+const REQUEST_TIMEOUT_MS = 30_000
+
+const httpTransport: Transport = async (url, headers, signal) => {
+  const response = await fetch(url, {
+    headers,
+    signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  })
   const responseHeaders: Record<string, string> = {}
   response.headers.forEach((value, key) => {
     responseHeaders[key] = value
@@ -120,7 +137,7 @@ async function main(): Promise<void> {
   } else {
     await loadRepoEnv(repoRoot)
     const key = process.env.AA_API_KEY
-    if (!key || key === 'paste_your_key_here') {
+    if (!key || key === API_KEY_PLACEHOLDER) {
       console.error('AA_API_KEY is required. Copy .env.example to .env and add your key.')
       process.exit(1)
     }

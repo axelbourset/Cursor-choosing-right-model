@@ -31,7 +31,7 @@ function tbodyRows(container: HTMLElement): HTMLTableRowElement[] {
 }
 
 function rowNames(container: HTMLElement): string[] {
-  return tbodyRows(container).map((row) => within(row).getAllByRole('cell')[0]!.textContent ?? '')
+  return tbodyRows(container).map((row) => within(row).getAllByRole('cell')[0]!.textContent)
 }
 
 afterEach(() => {
@@ -146,7 +146,7 @@ describe('ModelTable', () => {
     expect(
       rows
         .slice(0, 3)
-        .every((row) => !row.textContent?.includes('B') || row.textContent.includes('E')),
+        .every((row) => !row.textContent.includes('B') || row.textContent.includes('E')),
     ).toBe(true)
     expect(
       rows
@@ -263,11 +263,11 @@ describe('ModelTable', () => {
       />,
     )
     const row = screen.getByText('Claude Opus 5').closest('tr')!
-    const chip = row.querySelector('.provider-chip') as HTMLElement | null
+    const chip = row.querySelector<HTMLElement>('.provider-chip')
     expect(chip).not.toBeNull()
     // jsdom serialises colours to rgb() — normalise back to hex for the assertion
     const toHex = (css: string): string => {
-      const m = css.match(/rgba?\((\d+), (\d+), (\d+)/)
+      const m = /rgba?\((\d+), (\d+), (\d+)/.exec(css)
       if (!m) return css
       return (
         '#' +

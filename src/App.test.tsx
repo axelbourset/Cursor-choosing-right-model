@@ -17,7 +17,7 @@ vi.mock('echarts', () => ({
   })),
 }))
 
-import App from './App'
+import { App } from './App'
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {

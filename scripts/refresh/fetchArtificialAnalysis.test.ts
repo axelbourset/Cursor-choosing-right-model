@@ -79,9 +79,9 @@ function makeAaRecord(
 
 function createTransport(pages: readonly PageSpec[]): {
   transport: Transport
-  calls: Array<{ url: string; headers: Readonly<Record<string, string>> }>
+  calls: { url: string; headers: Readonly<Record<string, string>> }[]
 } {
-  const calls: Array<{ url: string; headers: Readonly<Record<string, string>> }> = []
+  const calls: { url: string; headers: Readonly<Record<string, string>> }[] = []
   let index = 0
 
   const transport: Transport = async (url, headers) => {

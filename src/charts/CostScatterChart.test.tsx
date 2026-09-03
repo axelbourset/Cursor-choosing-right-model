@@ -38,7 +38,7 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
 function scatterXValues(): number[] {
   const lastCall = setOption.mock.calls.at(-1)
   const option = lastCall?.[0] as {
-    series: Array<{ type: string; data: Array<{ value: [number, number] }> }>
+    series: { type: string; data: { value: [number, number] }[] }[]
   }
   return option.series
     .filter((s) => s.type === 'scatter')
@@ -46,8 +46,8 @@ function scatterXValues(): number[] {
 }
 
 function frontierLegendCount(): number {
-  const text = screen.getByTestId('frontier-legend').textContent ?? ''
-  const match = text.match(/(\d+)/)
+  const text = screen.getByTestId('frontier-legend').textContent
+  const match = /(\d+)/.exec(text)
   return match ? Number(match[1]) : 0
 }
 

@@ -20,10 +20,6 @@ function srgbToLinear(c: number): number {
   return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
 }
 
-function linearToSrgb(c: number): number {
-  return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055
-}
-
 /** OkLab coordinates of a hex colour — the perceptual space the palette is built in. */
 export function hexToOklab(hex: string): [number, number, number] {
   const [r, g, b] = hexToRgb(hex)
@@ -60,5 +56,3 @@ export function contrastRatio(hexA: string, hexB: string): number {
   const [hi, lo] = la > lb ? [la, lb] : [lb, la]
   return (hi + 0.05) / (lo + 0.05)
 }
-
-export { linearToSrgb }

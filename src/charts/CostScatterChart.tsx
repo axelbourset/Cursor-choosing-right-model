@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as echarts from 'echarts'
 import type { CostAxisKey, MetricKey, ModelRow } from '@schema/snapshot'
 import { COST_AXIS_KEYS, METRIC_KEYS } from '@schema/snapshot'
+import { makeParetoResult } from '@domain/pareto'
 import { selectPlottable, type Filters } from '@domain/selection'
 import { buildCostScatterOption } from './costScatterOption'
 import { CoverageNote } from '../ui/CoverageNote'
@@ -32,6 +33,10 @@ type CostScatterChartProps = {
   readonly onFrontierChange: (show: boolean) => void
 }
 
+function isCostAxisKey(value: string): value is CostAxisKey {
+  return (COST_AXIS_KEYS as readonly string[]).includes(value)
+}
+
 export function CostScatterChart({
   rows,
   filters,
@@ -45,16 +50,27 @@ export function CostScatterChart({
   onFrontierChange,
 }: CostScatterChartProps) {
   const chartRef = useRef<HTMLDivElement>(null)
-  const selection = selectPlottable(rows, metric, filters, costAxis)
-  const chartPareto = filters.paretoOnly
-    ? {
-        frontier: selection.chartRows,
-        dominated: [],
-        excluded: selection.pareto.excluded,
-      }
-    : selection.pareto
-  const option = buildCostScatterOption(chartPareto, metric, costAxis, showFrontier)
+  const chartInstance = useRef<echarts.ECharts | null>(null)
 
+  const selection = useMemo(
+    () => selectPlottable(rows, metric, filters, costAxis),
+    [rows, metric, filters, costAxis],
+  )
+
+  const option = useMemo(() => {
+    const chartPareto = filters.paretoOnly
+      ? makeParetoResult({
+          frontier: selection.chartRows,
+          dominated: [],
+          excluded: selection.pareto.excluded,
+        })
+      : selection.pareto
+    return buildCostScatterOption(chartPareto, metric, costAxis, showFrontier)
+  }, [selection, filters.paretoOnly, metric, costAxis, showFrontier])
+
+  // Init and dispose exactly once. This used to live in the same effect as setOption, with
+  // a freshly-built `option` in its dep array, so every toolbar change tore the chart down
+  // and rebuilt it — discarding animation, hover and tooltip state.
   useEffect(() => {
     const element = chartRef.current
     if (!element) {
@@ -62,7 +78,7 @@ export function CostScatterChart({
     }
 
     const chart = echarts.init(element)
-    chart.setOption(option)
+    chartInstance.current = chart
 
     const handleResize = () => {
       chart.resize()
@@ -72,7 +88,12 @@ export function CostScatterChart({
     return () => {
       window.removeEventListener('resize', handleResize)
       chart.dispose()
+      chartInstance.current = null
     }
+  }, [])
+
+  useEffect(() => {
+    chartInstance.current?.setOption(option, true)
   }, [option])
 
   return (
@@ -84,7 +105,12 @@ export function CostScatterChart({
             id="scatter-cost-axis"
             className="toolbar-select"
             value={costAxis}
-            onChange={(event) => onCostAxisChange(event.target.value as CostAxisKey)}
+            onChange={(event) => {
+              const value = event.target.value
+              if (isCostAxisKey(value)) {
+                onCostAxisChange(value)
+              }
+            }}
           >
             {COST_AXIS_KEYS.map((key) => (
               <option key={key} value={key}>
@@ -104,7 +130,9 @@ export function CostScatterChart({
                   type="radio"
                   name="scatter-metric"
                   checked={metric === key}
-                  onChange={() => onMetricChange(key)}
+                  onChange={() => {
+                    onMetricChange(key)
+                  }}
                 />
                 {METRIC_LABELS[key]}
               </label>
@@ -141,9 +169,9 @@ export function CostScatterChart({
               type="checkbox"
               aria-label="Only Pareto models"
               checked={filters.paretoOnly}
-              onChange={(event) =>
+              onChange={(event) => {
                 onFiltersChange({ ...filters, paretoOnly: event.target.checked })
-              }
+              }}
             />
             Only Pareto models
           </label>
@@ -152,7 +180,9 @@ export function CostScatterChart({
             <input
               type="checkbox"
               checked={showFrontier}
-              onChange={(event) => onFrontierChange(event.target.checked)}
+              onChange={(event) => {
+                onFrontierChange(event.target.checked)
+              }}
             />
             Draw Pareto line
           </label>

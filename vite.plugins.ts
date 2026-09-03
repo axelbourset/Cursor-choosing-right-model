@@ -2,9 +2,7 @@ import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { Plugin } from 'vite'
-import { SNAPSHOT_DEV_URL } from './schema/snapshot'
-
-const SNAPSHOT_PATH = 'data/models.json'
+import { SNAPSHOT_DEV_URL, SNAPSHOT_PATH } from './schema/snapshot'
 
 export function serveSnapshot(): Plugin {
   return {

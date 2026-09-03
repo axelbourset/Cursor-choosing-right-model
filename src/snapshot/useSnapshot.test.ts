@@ -123,8 +123,8 @@ describe('useSnapshot', () => {
       expect(result.current.result.kind).toBe('ok')
     })
 
-    await act(async () => {
-      await result.current.clear()
+    act(() => {
+      result.current.clear()
     })
 
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
@@ -159,5 +159,53 @@ describe('useSnapshot', () => {
     if (result.current.result.kind === 'ok') {
       expect(result.current.result.source).toBe('local')
     }
+  })
+
+  test('9 — a FileReader error surfaces as an invalid result, not an unhandled rejection', async () => {
+    class FailingFileReader {
+      onerror: (() => void) | null = null
+      onload: (() => void) | null = null
+      onabort: (() => void) | null = null
+      error = new Error('read failed')
+      result: string | null = null
+      readAsText() {
+        setTimeout(() => this.onerror?.(), 0)
+      }
+    }
+    vi.stubGlobal('FileReader', FailingFileReader)
+
+    const { result } = renderHook(() => useSnapshot())
+    await act(async () => {
+      await result.current.acceptFile(new File(['{}'], 'x.json'))
+    })
+
+    expect(result.current.result.kind).toBe('invalid')
+    if (result.current.result.kind === 'invalid') {
+      expect(result.current.result.errors[0]).toMatch(/Could not read that file/)
+    }
+    vi.unstubAllGlobals()
+  })
+
+  test('10 — a storage quota error surfaces as an invalid result', async () => {
+    const quotaStorage = {
+      get: () => null,
+      set: () => {
+        throw new Error('QuotaExceededError')
+      },
+      remove: () => undefined,
+    }
+    vi.stubGlobal('localStorage', {
+      getItem: quotaStorage.get,
+      setItem: quotaStorage.set,
+      removeItem: quotaStorage.remove,
+    })
+
+    const { result } = renderHook(() => useSnapshot())
+    await act(async () => {
+      await result.current.acceptFile(new File(['{}'], 'x.json'))
+    })
+
+    expect(result.current.result.kind).toBe('invalid')
+    vi.unstubAllGlobals()
   })
 })

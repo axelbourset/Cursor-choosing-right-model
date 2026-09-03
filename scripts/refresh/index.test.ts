@@ -101,7 +101,10 @@ describe('runRefresh', () => {
 
   test('4 — transport returns 429: rate limit error, writeFile never called', async () => {
     const { writer, calls } = createFakeWriter()
-    const transport: Transport = async (url) => {
+    const base = fixtureTransport(readFixture)
+    // The three fetches now run in parallel, so this transport must answer all of them and
+    // fail only the AA call.
+    const transport: Transport = async (url, headers) => {
       if (url.includes('/language/models/free')) {
         return {
           status: 429,
@@ -110,7 +113,7 @@ describe('runRefresh', () => {
           text: async () => '',
         }
       }
-      throw new Error(`unexpected URL in 429 test: ${url}`)
+      return base(url, headers)
     }
 
     const result = await runRefresh(
@@ -192,7 +195,7 @@ describe('runRefresh', () => {
     const transport: Transport = async (url, headers) => {
       if (url.includes('/language/models/free')) {
         const response = await base(url, headers)
-        const envelope = (await response.json()) as { data: Array<{ slug: string }> }
+        const envelope = (await response.json()) as { data: { slug: string }[] }
         return {
           status: 200,
           headers: response.headers,
@@ -405,7 +408,7 @@ describe('runRefresh', () => {
       path.join(path.dirname(fileURLToPath(import.meta.url)), 'index.ts'),
       'utf-8',
     )
-    const runRefreshMatch = source.match(/export async function runRefresh[\s\S]*?^}/m)
+    const runRefreshMatch = /export async function runRefresh[\s\S]*?^}/m.exec(source)
     expect(runRefreshMatch).not.toBeNull()
     expect(runRefreshMatch![0]).not.toMatch(/if\s*\([^)]*fixture/i)
   })

@@ -30,7 +30,10 @@ const EFFORT_SUFFIXES = [
 ] as const
 
 /** Suffixes Cursor appends for its own packaging — a different serving tier or context
- *  window over the SAME underlying model, which AA benchmarks once. */
+ *  window over the SAME underlying model, which AA benchmarks once.
+ *
+ *  Stripping is deliberately single-level: candidates are derived from the original slug
+ *  only, so `foo-fast-1m` yields `foo-fast` but never `foo`. No current model needs more. */
 const CURSOR_PACKAGING_SUFFIXES = ['fast-mode', 'fast', '1m'] as const
 
 /** Cursor writes "Claude 4.5 Opus"; Anthropic and AA write "Claude Opus 4.5". The tier word
@@ -39,13 +42,13 @@ function swapClaudeTier(slug: string): string | null {
   // Capture groups are `string | undefined` under noUncheckedIndexedAccess. Destructuring
   // and checking keeps a future edit to these patterns from interpolating `undefined` into
   // the join key for the entire mapping.
-  const versionFirst = slug.match(/^claude-([\d-]+?)-(opus|sonnet|haiku)$/)
+  const versionFirst = /^claude-([\d-]+?)-(opus|sonnet|haiku)$/.exec(slug)
   if (versionFirst) {
     const [, version, tier] = versionFirst
     return version !== undefined && tier !== undefined ? `claude-${tier}-${version}` : null
   }
 
-  const tierFirst = slug.match(/^claude-(opus|sonnet|haiku)-([\d-]+)$/)
+  const tierFirst = /^claude-(opus|sonnet|haiku)-([\d-]+)$/.exec(slug)
   if (tierFirst) {
     const [, tier, version] = tierFirst
     return version !== undefined && tier !== undefined ? `claude-${version}-${tier}` : null
@@ -139,11 +142,17 @@ function resolveFamily(base: string, aaModels: readonly AaModel[]): FamilyResolu
     }
   }
 
+  // Ties break on slug, not on array order: two records at the same intelligence would
+  // otherwise resolve by however AA happened to order its response, so a reordering
+  // upstream would flip the mapping and report a spurious remap.
   let best: AaModel | null = null
   let bestScore = Number.NEGATIVE_INFINITY
   for (const model of reasoning) {
     const score = model.intelligence
-    if (score !== null && score > bestScore) {
+    if (score === null) {
+      continue
+    }
+    if (score > bestScore || (score === bestScore && best !== null && model.slug < best.slug)) {
       best = model
       bestScore = score
     }

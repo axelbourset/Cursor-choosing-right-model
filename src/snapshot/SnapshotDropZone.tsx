@@ -11,7 +11,21 @@ export type SnapshotDropZoneProps = {
 
 function FileInput({ onFile }: { readonly onFile: (file: File) => void }) {
   return (
-    <label className="dropzone__target">
+    <label
+      className="dropzone__target"
+      // On the LABEL, not the input: styles.css clips the input to 1x1, so a drop on the
+      // visible panel never reached it and the browser navigated away instead.
+      onDrop={(event) => {
+        event.preventDefault()
+        const file = event.dataTransfer.files[0]
+        if (file !== undefined) {
+          onFile(file)
+        }
+      }}
+      onDragOver={(event) => {
+        event.preventDefault()
+      }}
+    >
       <span className="dropzone__icon" aria-hidden="true">
         &#8595;
       </span>
@@ -29,16 +43,6 @@ function FileInput({ onFile }: { readonly onFile: (file: File) => void }) {
             onFile(file)
           }
           event.target.value = ''
-        }}
-        onDrop={(event) => {
-          event.preventDefault()
-          const file = event.dataTransfer.files[0]
-          if (file !== undefined) {
-            onFile(file)
-          }
-        }}
-        onDragOver={(event) => {
-          event.preventDefault()
         }}
       />
     </label>
@@ -83,6 +87,12 @@ function StaleContent({ found, expected }: { readonly found: number; readonly ex
 
 export function SnapshotDropZone({ result, lastGood, onFile, children }: SnapshotDropZoneProps) {
   const showChildren = result.kind === 'ok' || (result.kind === 'invalid' && lastGood !== null)
+
+  // `loading` renders nothing at all: it is the state on mount, and showing the onboarding
+  // guide there flashes "get an API key, git clone…" at users who already have a snapshot.
+  if (result.kind === 'loading') {
+    return <div className="dropzone dropzone--loading" aria-busy="true" />
+  }
 
   return (
     <div className={result.kind === 'ok' ? undefined : 'dropzone'}>

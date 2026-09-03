@@ -13,7 +13,7 @@ async function loadAaFixture(): Promise<AaModel[]> {
   for (const page of [1, 2]) {
     const body = JSON.parse(
       await readFile(path.join(fixturesDir, `aa-free-page-${page}.synthetic.json`), 'utf-8'),
-    ) as { data: Array<{ slug: string; name: string; evaluations: Record<string, number | null> }> }
+    ) as { data: { slug: string; name: string; evaluations: Record<string, number | null> }[] }
     for (const record of body.data) {
       models.push({
         slug: record.slug,

@@ -32,8 +32,13 @@ export function compareRows(a: ModelRow, b: ModelRow, key: SortKey, dir: SortDir
     return dir === 'asc' ? cmp : -cmp
   }
 
-  const cmp = (aVal as number) - (bVal as number)
-  return dir === 'asc' ? cmp : -cmp
+  if (typeof aVal === 'number' && typeof bVal === 'number') {
+    const cmp = aVal - bVal
+    return dir === 'asc' ? cmp : -cmp
+  }
+
+  // SortKey admits only string and number fields, and both null cases returned above.
+  return 0
 }
 
 /** Stable sort. Does not mutate the input array. */

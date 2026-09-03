@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ModelRow } from '@schema/snapshot'
 import { colorForProvider, textOnProvider } from '../charts/providerColors'
-import { COLUMNS } from './columns'
+import { COLUMNS, MISSING_TEXT } from './columns'
 import { useSortedRows } from './useSortedRows'
 
 type ModelTableProps = {
@@ -22,7 +22,7 @@ function matchesSearch(row: ModelRow, query: string): boolean {
 
 export function ModelTable({ rows }: ModelTableProps) {
   const [search, setSearch] = useState('')
-  const { sorted, toggle } = useSortedRows(rows)
+  const { sorted, toggle, sortKey, direction } = useSortedRows(rows)
   const visible = useMemo(
     () => sorted.filter((row) => matchesSearch(row, search)),
     [sorted, search],
@@ -30,7 +30,7 @@ export function ModelTable({ rows }: ModelTableProps) {
 
   return (
     <div className="table-section">
-      <p className="table-section__subheading">Same selection as the chart</p>
+      <p className="table-section__subheading">Every model in the current filter</p>
       <div className="model-table-toolbar">
         <label className="model-table-search">
           <span className="model-table-search__label">Search</span>
@@ -39,7 +39,9 @@ export function ModelTable({ rows }: ModelTableProps) {
             className="model-table-search__input"
             placeholder="Filter by model or provider…"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value)
+            }}
             aria-label="Search models"
           />
         </label>
@@ -58,6 +60,15 @@ export function ModelTable({ rows }: ModelTableProps) {
                 <th
                   key={column.key}
                   scope="col"
+                  // The hook already tracked sortKey/direction; nothing read them, so a
+                  // sorted table announced neither which column nor which way.
+                  aria-sort={
+                    sortKey === column.key
+                      ? direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                  }
                   className={
                     column.numeric ? 'model-table__th model-table__th--num' : 'model-table__th'
                   }
@@ -65,9 +76,16 @@ export function ModelTable({ rows }: ModelTableProps) {
                   <button
                     type="button"
                     className="model-table__sort"
-                    onClick={() => toggle(column.key)}
+                    onClick={() => {
+                      toggle(column.key)
+                    }}
                   >
                     {column.label}
+                    {sortKey === column.key ? (
+                      <span aria-hidden="true" className="model-table__sort-arrow">
+                        {direction === 'asc' ? ' \u2191' : ' \u2193'}
+                      </span>
+                    ) : null}
                   </button>
                 </th>
               ))}
@@ -77,10 +95,11 @@ export function ModelTable({ rows }: ModelTableProps) {
             {visible.map((row) => (
               <tr key={row.cursorSlug}>
                 {COLUMNS.map((column) => {
-                  const value = column.format(row)
+                  const cell = column.format(row)
+                  const value = cell.kind === 'missing' ? MISSING_TEXT : cell.text
                   const classes = ['model-table__td']
                   if (column.numeric) classes.push('model-table__td--num')
-                  if (value === '—') classes.push('model-table__td--empty')
+                  if (cell.kind === 'missing') classes.push('model-table__td--empty')
 
                   if (column.key === 'provider') {
                     const providerColor = colorForProvider(row.provider)

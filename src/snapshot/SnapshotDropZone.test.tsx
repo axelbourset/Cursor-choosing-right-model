@@ -139,4 +139,49 @@ describe('SnapshotDropZone', () => {
     expect(screen.getByText('bad')).toBeInTheDocument()
     expect(screen.queryByText('child content')).not.toBeInTheDocument()
   })
+
+  test('13 — dropping a file on the visible target calls onFile', () => {
+    // The handlers used to live on the <input>, which styles.css clips to 1x1, so a drop on
+    // the panel never reached them and the browser navigated away instead.
+    const onFile = vi.fn()
+    render(
+      <SnapshotDropZone result={{ kind: 'empty' }} lastGood={null} onFile={onFile}>
+        <div />
+      </SnapshotDropZone>,
+    )
+
+    const target = screen.getByText('Drop your snapshot').closest('label')
+    expect(target).not.toBeNull()
+
+    const file = new File(['{}'], 'models.json', { type: 'application/json' })
+    fireEvent.drop(target!, { dataTransfer: { files: [file] } })
+
+    expect(onFile).toHaveBeenCalledTimes(1)
+    expect(onFile.mock.calls[0]![0]).toBe(file)
+  })
+
+  test('14 — dragover is prevented so the browser does not navigate away', () => {
+    render(
+      <SnapshotDropZone result={{ kind: 'empty' }} lastGood={null} onFile={vi.fn()}>
+        <div />
+      </SnapshotDropZone>,
+    )
+
+    const target = screen.getByText('Drop your snapshot').closest('label')!
+    const event = new Event('dragover', { bubbles: true, cancelable: true })
+    fireEvent(target, event)
+
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  test('15 — the loading state renders neither the guide nor the drop target', () => {
+    render(
+      <SnapshotDropZone result={{ kind: 'loading' }} lastGood={null} onFile={vi.fn()}>
+        <div />
+      </SnapshotDropZone>,
+    )
+
+    expect(screen.queryByText('Drop your snapshot')).toBeNull()
+    expect(screen.queryByText(/API key/i)).toBeNull()
+  })
 })

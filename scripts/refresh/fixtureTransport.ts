@@ -1,7 +1,9 @@
 import type { Transport } from './transport'
 
+const NO_HEADERS: Readonly<Record<string, string>> = {}
+
 function aaFixturePath(url: string): string {
-  const match = url.match(/[?&]page=(\d+)/)
+  const match = /[?&]page=(\d+)/.exec(url)
   const page = match?.[1] ?? '1'
   return `fixtures/aa-free-page-${page}.synthetic.json`
 }
@@ -14,8 +16,8 @@ export function fixtureTransport(read: (p: string) => Promise<string>): Transpor
       return {
         status: 200,
         headers: { 'x-ratelimit-remaining': '24' },
-        json: async () => JSON.parse(body),
-        text: async () => body,
+        json: () => Promise.resolve(JSON.parse(body) as unknown),
+        text: () => Promise.resolve(body),
       }
     }
 
@@ -23,9 +25,9 @@ export function fixtureTransport(read: (p: string) => Promise<string>): Transpor
       const body = await read('fixtures/cursor-pricing.json')
       return {
         status: 200,
-        headers: {} as Readonly<Record<string, string>>,
-        json: async () => JSON.parse(body),
-        text: async () => body,
+        headers: NO_HEADERS,
+        json: () => Promise.resolve(JSON.parse(body) as unknown),
+        text: () => Promise.resolve(body),
       }
     }
 
@@ -33,11 +35,9 @@ export function fixtureTransport(read: (p: string) => Promise<string>): Transpor
       const body = await read('fixtures/cursor-models.fixture.md')
       return {
         status: 200,
-        headers: {} as Readonly<Record<string, string>>,
-        json: async () => {
-          throw new Error('cursor markdown is not JSON')
-        },
-        text: async () => body,
+        headers: NO_HEADERS,
+        json: () => Promise.reject(new Error('cursor markdown is not JSON')),
+        text: () => Promise.resolve(body),
       }
     }
 

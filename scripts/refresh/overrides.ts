@@ -1,7 +1,9 @@
 import { z } from 'zod'
 import type { CursorModelDeclaration } from './declaration'
 
-export class OverridesError extends Error {}
+export class OverridesError extends Error {
+  override name = 'OverridesError'
+}
 
 /** Strict: an unknown key is a typo, and a silently-ignored typo is exactly the failure
  *  ADR-4 wanted the compiler to prevent when this data lived in TypeScript. */

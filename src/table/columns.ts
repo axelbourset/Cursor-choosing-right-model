@@ -1,19 +1,26 @@
 import type { SortKey } from '@domain/sort'
 import type { ModelRow } from '@schema/snapshot'
 
+/** A rendered cell. Tagged rather than a bare string so "missing" does not have to be
+ *  re-detected by comparing against the em dash: the renderer branched on `value === '—'`
+ *  to apply its empty styling, which coupled two files through a display character. */
+export type Cell = { readonly kind: 'value'; readonly text: string } | { readonly kind: 'missing' }
+
+export const MISSING_TEXT = '—'
+
 export type Column = {
   readonly key: SortKey
   readonly label: string
   readonly numeric: boolean
-  readonly format: (row: ModelRow) => string
+  readonly format: (row: ModelRow) => Cell
 }
 
-function formatNullableNumber(value: number | null): string {
-  return value === null ? '—' : String(value)
+function formatNullableNumber(value: number | null): Cell {
+  return value === null ? { kind: 'missing' } : { kind: 'value', text: String(value) }
 }
 
-function formatString(value: string): string {
-  return value
+function formatString(value: string): Cell {
+  return { kind: 'value', text: value }
 }
 
 export const COLUMNS: readonly Column[] = [

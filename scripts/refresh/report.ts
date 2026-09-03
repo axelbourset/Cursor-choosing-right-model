@@ -1,5 +1,4 @@
 import type { Snapshot } from '@schema/snapshot'
-import { computeCoverage } from '@domain/coverage'
 import { hasChanges, type SnapshotChanges } from './changes'
 import { SNAPSHOT_PATH } from './writeSnapshot'
 
@@ -8,7 +7,9 @@ export function buildReport(
   snapshot: Snapshot,
   rateLimitRemaining: string | null,
 ): readonly string[] {
-  const coverage = computeCoverage(snapshot.models)
+  // The snapshot's own coverage, not a recomputation: reporting a derived value would make
+  // any disagreement between stored and derived structurally unobservable.
+  const coverage = snapshot.coverage
   const unmatchedCount = snapshot.unmatched.length
   const lines: string[] = []
 

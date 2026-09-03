@@ -120,7 +120,7 @@ describe('fetchCursorPricingJson', () => {
       schemaVersion: number
       currency: string
       unit: string
-      models: Array<Record<string, unknown>>
+      models: Record<string, unknown>[]
     }
     const models = fixture.models.map((model, index) => {
       if (index !== 0) {

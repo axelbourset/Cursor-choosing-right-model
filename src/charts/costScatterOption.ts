@@ -2,6 +2,7 @@ import type { EChartsOption } from 'echarts'
 import type { CostAxisKey, MetricKey, ModelRow } from '@schema/snapshot'
 import type { ParetoResult } from '@domain/pareto'
 import { isOnFrontier } from '@domain/pareto'
+import { toPricedRow, type PricedRow } from '@domain/price'
 import { CHART_THEME, type ChartTheme } from './theme'
 import { colorForProvider } from './providerColors'
 
@@ -13,17 +14,6 @@ const COST_AXIS_LABELS: Record<CostAxisKey, string> = {
   input: 'Price per 1M input tokens (USD, log scale)',
   output: 'Price per 1M output tokens (USD, log scale)',
   cacheRead: 'Price per 1M cache-read tokens (USD, log scale)',
-}
-
-function priceForAxis(row: ModelRow, costAxis: CostAxisKey): number {
-  switch (costAxis) {
-    case 'input':
-      return row.priceInput as number
-    case 'output':
-      return row.priceOutput as number
-    case 'cacheRead':
-      return row.priceCacheRead as number
-  }
 }
 
 type ScatterPoint = {
@@ -47,17 +37,27 @@ function fmtScore(value: number | null): string {
   return value === null ? '—' : String(Math.round(value * 10) / 10)
 }
 
+/** A missing price must render as an em dash, never as the string `null` and never as 0.
+ *  `selectPlottable` only guarantees the ACTIVE cost axis is present, so the other two
+ *  columns in the tooltip are genuinely nullable. */
+function fmtPrice(value: number | null): string {
+  return value === null ? '—' : `$${String(value)}`
+}
+
+function isScatterPoint(value: unknown): value is ScatterPoint {
+  return typeof value === 'object' && value !== null && 'row' in value
+}
+
 function scatterPoint(
-  row: ModelRow,
-  metric: MetricKey,
-  costAxis: CostAxisKey,
+  priced: PricedRow,
   pareto: ParetoResult,
   color: string,
   theme: ChartTheme,
 ): ScatterPoint {
+  const row = priced.row
   const frontier = isOnFrontier(row, pareto)
   return {
-    value: [priceForAxis(row, costAxis), row[metric] as number],
+    value: [priced.cost, priced.score],
     name: row.cursorName,
     row,
     // Provider identity lives in the fill colour; frontier membership lives in
@@ -85,48 +85,60 @@ export function buildCostScatterOption(
   showFrontier: boolean,
   theme: ChartTheme = CHART_THEME,
 ): EChartsOption {
-  const plottable = [...pareto.frontier, ...pareto.dominated]
-  const providers = [...new Set(plottable.map((row) => row.provider))].sort()
+  // Projected once, here, so a row missing either axis is dropped rather than asserted
+  // away. Everything downstream works with numbers that are provably present.
+  const plottable = [...pareto.frontier, ...pareto.dominated].flatMap((row) => {
+    const priced = toPricedRow(row, metric, costAxis)
+    return priced === null ? [] : [priced]
+  })
+  const providers = [...new Set(plottable.map((priced) => priced.row.provider))].sort()
   const muted = theme.textMuted
 
-  const series: EChartsOption['series'] = providers.map((provider) => {
+  const scatterSeries = providers.map((provider) => {
     const color = colorForProvider(provider)
     const data = plottable
-      .filter((row) => row.provider === provider)
-      .map((row) => scatterPoint(row, metric, costAxis, pareto, color, theme))
+      .filter((priced) => priced.row.provider === provider)
+      .map((priced) => scatterPoint(priced, pareto, color, theme))
 
     return {
       name: provider,
-      type: 'scatter',
+      type: 'scatter' as const,
       data,
       // One mark shape for every provider — identity is colour, not glyph.
-      symbol: 'circle',
+      symbol: 'circle' as const,
       itemStyle: { color },
-      emphasis: { focus: 'self' },
+      emphasis: { focus: 'self' as const },
       cursor: 'pointer',
     }
   })
 
-  if (showFrontier && pareto.frontier.length > 0) {
-    const frontierData = pareto.frontier.map((row) => [
-      priceForAxis(row, costAxis),
-      row[metric] as number,
-    ])
-    ;(series as Array<Record<string, unknown>>).push({
-      name: 'Pareto',
-      type: 'line',
-      data: frontierData,
-      showSymbol: false,
-      lineStyle: { width: 2, color: theme.mint },
-      tooltip: { show: false },
-      legendHoverLink: false,
-      silent: true,
-      z: 0,
-    })
-  }
+  const frontierPoints = pareto.frontier.flatMap((row) => {
+    const priced = toPricedRow(row, metric, costAxis)
+    return priced === null ? [] : [[priced.cost, priced.score]]
+  })
 
-  const legendData =
-    showFrontier && pareto.frontier.length > 0 ? [...providers, 'Pareto'] : providers
+  const frontierSeries =
+    showFrontier && frontierPoints.length > 0
+      ? [
+          {
+            name: 'Pareto',
+            type: 'line' as const,
+            data: frontierPoints,
+            showSymbol: false,
+            lineStyle: { width: 2, color: theme.mint },
+            tooltip: { show: false },
+            legendHoverLink: false,
+            silent: true,
+            z: 0,
+          },
+        ]
+      : []
+
+  // Built in one expression so the union is inferred, not asserted away: the old
+  // `series as Array<Record<string, unknown>>` push disabled checking on this series.
+  const series = [...scatterSeries, ...frontierSeries] satisfies EChartsOption['series']
+
+  const legendData = frontierSeries.length > 0 ? [...providers, 'Pareto'] : providers
 
   return {
     grid: {
@@ -145,17 +157,19 @@ export function buildCostScatterOption(
       textStyle: { color: theme.textSecondary, fontSize: 12, fontFamily: theme.fontSans },
       extraCssText: 'border-width: 1px;',
       formatter: (params: unknown) => {
-        const point = (params as { data?: ScatterPoint }).data
-        if (!point?.row) {
+        // The line series' data entries are bare [x, y] tuples with no row, so this guard
+        // is load-bearing rather than defensive.
+        const data = (params as { data?: unknown }).data
+        if (!isScatterPoint(data)) {
           return ''
         }
-        const row = point.row
+        const row = data.row
         return [
           `<strong style="color:${theme.textPrimary}">${row.cursorName}</strong>`,
           row.provider,
-          `Input: <b>$${row.priceInput}</b> / 1M tokens`,
-          `Output: <b>$${row.priceOutput}</b> / 1M tokens`,
-          `Cache read: <b>$${row.priceCacheRead}</b> / 1M tokens`,
+          `Input: <b>${fmtPrice(row.priceInput)}</b> / 1M tokens`,
+          `Output: <b>${fmtPrice(row.priceOutput)}</b> / 1M tokens`,
+          `Cache read: <b>${fmtPrice(row.priceCacheRead)}</b> / 1M tokens`,
           `Intelligence: <b>${fmtScore(row.intelligence)}</b> · Coding: <b>${fmtScore(row.coding)}</b> · Agentic: <b>${fmtScore(row.agentic)}</b>`,
         ].join('<br/>')
       },

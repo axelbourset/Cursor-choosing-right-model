@@ -102,7 +102,7 @@ describe('selectForMetric', () => {
 
   test('7 — shown + excludedForMissingMetric.length === total on every non-pareto case', () => {
     const rows = makeFiveRows()
-    const cases: Array<{ metric: 'intelligence' | 'coding'; filters: Filters }> = [
+    const cases: { metric: 'intelligence' | 'coding'; filters: Filters }[] = [
       { metric: 'intelligence', filters: DEFAULT_FILTERS },
       { metric: 'coding', filters: DEFAULT_FILTERS },
       { metric: 'intelligence', filters: { ...DEFAULT_FILTERS, provider: 'Anthropic' } },

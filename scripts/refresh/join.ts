@@ -9,7 +9,9 @@ export type JoinResult = {
   /** Rows with no AA record. These ALSO appear in `rows` with null AA fields. */
   readonly unresolved: readonly UnmatchedEntry[]
 }
-export class JoinError extends Error {}
+export class JoinError extends Error {
+  override name = 'JoinError'
+}
 
 export type JoinInput = {
   readonly declarations: readonly CursorModelDeclaration[]
@@ -25,13 +27,18 @@ function findPricingRow(
   return pricing.find((row) => row.slug === cursorSlug || row.slug === `cursor-${cursorSlug}`)
 }
 
+/** One object, not four interchangeable `number | null` positionals: the call site passed
+ *  them in a different order than `CursorCatalogueRow` declares them, and any transposition
+ *  would have typechecked. */
 function hasAnyPrice(
-  input: number | null,
-  output: number | null,
-  cacheRead: number | null,
-  cacheWrite: number | null,
+  prices: Pick<CursorCatalogueRow, 'input' | 'output' | 'cacheRead' | 'cacheWrite'>,
 ): boolean {
-  return input !== null || output !== null || cacheRead !== null || cacheWrite !== null
+  return (
+    prices.input !== null ||
+    prices.output !== null ||
+    prices.cacheRead !== null ||
+    prices.cacheWrite !== null
+  )
 }
 
 function resolvePrices(
@@ -49,14 +56,7 @@ function resolvePrices(
     }
   }
 
-  if (
-    !hasAnyPrice(
-      catalogueRow.input,
-      catalogueRow.output,
-      catalogueRow.cacheRead,
-      catalogueRow.cacheWrite,
-    )
-  ) {
+  if (!hasAnyPrice(catalogueRow)) {
     throw new JoinError(`no price source for ${declaration.cursorName}`)
   }
 
@@ -68,6 +68,8 @@ function resolvePrices(
   }
 }
 
+/** Last-write-wins would silently pick one of two records for the same slug, so a duplicate
+ *  is treated like every other broken invariant in this file: it throws. */
 function buildAaIndex(aaModels: readonly AaModel[]): Map<string, AaModel> {
   const index = new Map<string, AaModel>()
   for (const model of aaModels) {

@@ -66,7 +66,12 @@ function Header({
                 aria-label="Replace snapshot file"
                 onChange={(event) => {
                   const file = event.target.files?.[0]
-                  if (file) onReplace(file)
+                  if (file !== undefined) {
+                    onReplace(file)
+                  }
+                  // Reset so re-picking the same filename fires change again, matching
+                  // SnapshotDropZone. Without it, replacing with the same name did nothing.
+                  event.target.value = ''
                 }}
               />
             </label>
@@ -97,7 +102,7 @@ function Footer() {
   )
 }
 
-export default function App() {
+export function App() {
   const snapshotHook = useSnapshot()
   const { state, set } = useViewState()
 
@@ -118,7 +123,7 @@ export default function App() {
           void snapshotHook.useLocalFile()
         }}
         onClear={() => {
-          void snapshotHook.clear()
+          snapshotHook.clear()
         }}
       />
       <SnapshotDropZone

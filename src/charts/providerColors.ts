@@ -68,8 +68,13 @@ function hashIndex(seed: string, length: number): number {
 
 const PALETTE_VALUES = Object.values(PROVIDER_COLORS)
 
+/** Only reachable if PROVIDER_COLORS were ever emptied; keeps this file free of `!`. */
+const FALLBACK_COLOR = '#177c71'
+
 /** Deterministic provider colour for chart marks and table pills. */
 export function colorForProvider(provider: string): string {
   const key = normaliseProviderKey(provider)
-  return PROVIDER_COLORS[key] ?? PALETTE_VALUES[hashIndex(key, PALETTE_VALUES.length)]!
+  return (
+    PROVIDER_COLORS[key] ?? PALETTE_VALUES[hashIndex(key, PALETTE_VALUES.length)] ?? FALLBACK_COLOR
+  )
 }
