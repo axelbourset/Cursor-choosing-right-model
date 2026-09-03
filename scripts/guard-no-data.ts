@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { snapshotSchema } from '@schema/snapshot'
+import { API_KEY_PLACEHOLDER, snapshotSchema } from '@schema/snapshot'
 
 export type GuardViolation = { readonly path: string; readonly reason: string }
 
@@ -14,9 +14,26 @@ export type GuardInput = {
 }
 
 const AA_INDEX_PATTERN = /artificial_analysis_\w*_index/
-const API_KEY_PATTERN = /aa[_-]?api[_-]?key\s*[:=]\s*\S{16,}/i
-const PLACEHOLDER = 'paste_your_key_here'
-const DATA_IMPORT_PATTERN = /(?:import\s+[^'"]+\s+from|from)\s+['"](?:\.\.\/)*data\//
+
+/** Two independent shapes. The first catches a key stored under a recognisable name; the
+ *  second catches a long opaque token near ANY api-key-ish word, which is what a key baked
+ *  into a bundle actually looks like — the original name-anchored pattern missed
+ *  `"x-api-key":"sk-…"` entirely. */
+const API_KEY_NAME_PATTERN = /aa[_-]?api[_-]?key\s*["']?\s*[:=]\s*["']?\S{16,}/i
+const API_KEY_VALUE_PATTERN = /api[_-]?key["']?\s*[:=,]\s*["'][A-Za-z0-9_-]{20,}["']/i
+
+/** Any module SPECIFIER naming the data directory, however it is written: static import,
+ *  dynamic `import()`, `require`, and bare side-effect import, with `./`, `../`, `/` or an
+ *  alias prefix. The previous pattern matched only `from '…/data/…'`.
+ *
+ *  Anchored on the import keyword on purpose: a bare string containing `data/` is a path
+ *  constant, not a dependency — `schema/snapshot.ts` legitimately exports one. */
+const DATA_IMPORT_PATTERN =
+  /(?:\bfrom|\bimport|\brequire)\s*\(?\s*['"][^'"]*(?:^|[/@])data\/[^'"]*['"]/
+
+/** Read as text only where text is plausible; dist/ carries font and image binaries. */
+const BINARY_EXTENSIONS =
+  /\.(?:woff2?|ttf|eot|otf|png|jpe?g|gif|webp|avif|ico|mp4|webm|pdf|zip|gz)$/i
 
 function checkSnapshotShape(path: string, content: string): GuardViolation | null {
   if (content.includes('"cursorSlug"') && content.includes('"aaVariantNote"')) {
@@ -60,18 +77,27 @@ export function findViolations(
       continue
     }
 
+    if (BINARY_EXTENSIONS.test(path)) {
+      continue
+    }
+
     let content: string | undefined
     const getContent = (): string => {
       content ??= read(path)
       return content
     }
 
-    if (path.startsWith('src/')) {
-      const srcContent = getContent()
-      if (DATA_IMPORT_PATTERN.test(srcContent)) {
+    // Applied to every tracked first-party source file, not just src/: domain/ and schema/
+    // shipping the snapshot would be just as fatal, and dependency-cruiser does not cover it.
+    if (
+      isTracked &&
+      /^(?:src|domain|schema)\//.test(path) &&
+      /\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(path)
+    ) {
+      if (DATA_IMPORT_PATTERN.test(getContent())) {
         violations.push({
           path,
-          reason: 'src must not import from data/',
+          reason: 'first-party source must not import from data/',
         })
       }
     }
@@ -88,11 +114,11 @@ export function findViolations(
     }
 
     if (isTracked || isBuilt) {
-      const keyContent = getContent().replaceAll(PLACEHOLDER, '')
-      if (API_KEY_PATTERN.test(keyContent)) {
+      const keyContent = getContent().replaceAll(API_KEY_PLACEHOLDER, '')
+      if (API_KEY_NAME_PATTERN.test(keyContent) || API_KEY_VALUE_PATTERN.test(keyContent)) {
         violations.push({
           path,
-          reason: 'appears to contain an AA API key',
+          reason: 'appears to contain an API key',
         })
       }
     }
@@ -174,6 +200,13 @@ function runCli(): void {
   ].filter((path) => !GUARD_SELF_PATHS.has(path))
   const built = walkBuiltFiles('dist').map((path) => `dist/${path}`)
   const read = (path: string): string => readFileSync(path, 'utf-8')
+
+  // The dist/ rules are half of this guard. Silently passing because dist/ is absent is how
+  // a CI job can run the guard before the build and check nothing at all.
+  if (!existsSync('dist')) {
+    console.error('dist/ is absent — run `npm run build` before `npm run guard`')
+    process.exit(1)
+  }
 
   const violations = findViolations({ tracked, built }, read)
   if (violations.length === 0) {
