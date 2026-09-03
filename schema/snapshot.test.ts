@@ -10,12 +10,14 @@ function validSnapshot() {
       attribution: 'Artificial Analysis (artificialanalysis.ai)' as const,
     },
     coverage: {
-      totalRows: 47,
-      resolved: 43,
-      intelligence: 43,
-      coding: 31,
-      agentic: 31,
-      aaCostPerTask: 29,
+      // Consistent with the single row below: snapshotSchema now rejects a coverage block
+      // that contradicts models.length.
+      totalRows: 1,
+      resolved: 1,
+      intelligence: 1,
+      coding: 1,
+      agentic: 1,
+      aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
     models: [
@@ -59,9 +61,38 @@ describe('snapshotSchema', () => {
     expect(snapshotSchema.safeParse(input).success).toBe(false)
   })
 
-  test('4 — models: []', () => {
-    const input = { ...validSnapshot(), models: [] }
+  test('4 — models: [] with a matching zeroed coverage block', () => {
+    const zeroed = {
+      totalRows: 0,
+      resolved: 0,
+      intelligence: 0,
+      coding: 0,
+      agentic: 0,
+      aaCostPerTask: 0,
+    }
+    const input = { ...validSnapshot(), models: [], coverage: zeroed }
+
     expect(snapshotSchema.safeParse(input).success).toBe(true)
+  })
+
+  test('4b — coverage that contradicts models.length is rejected', () => {
+    const input = { ...validSnapshot(), models: [] }
+
+    expect(snapshotSchema.safeParse(input).success).toBe(false)
+  })
+
+  test('4c — a coverage count above totalRows is rejected', () => {
+    const input = validSnapshot()
+    input.coverage = { ...input.coverage, resolved: input.coverage.totalRows + 1 }
+
+    expect(snapshotSchema.safeParse(input).success).toBe(false)
+  })
+
+  test('4d — a negative coverage count is rejected', () => {
+    const input = validSnapshot()
+    input.coverage = { ...input.coverage, coding: -1 }
+
+    expect(snapshotSchema.safeParse(input).success).toBe(false)
   })
 
   test('5 — intelligence: "63.1" (string)', () => {

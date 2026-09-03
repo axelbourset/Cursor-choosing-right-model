@@ -30,13 +30,15 @@ export const modelRowSchema = z.object({
 
 /** Dataset-level counts, derived from the rows rather than asserted. Lets the UI say
  *  "43 of 49" without every consumer recounting. */
+const count = z.number().int().nonnegative()
+
 export const coverageSchema = z.object({
-  totalRows: z.number().int(),
-  resolved: z.number().int(),
-  intelligence: z.number().int(),
-  coding: z.number().int(),
-  agentic: z.number().int(),
-  aaCostPerTask: z.number().int(),
+  totalRows: count,
+  resolved: count,
+  intelligence: count,
+  coding: count,
+  agentic: count,
+  aaCostPerTask: count,
 })
 
 /** A model Cursor publishes that has no Artificial Analysis record, with the reason.
@@ -49,17 +51,31 @@ export type UnmatchedEntry = z.infer<typeof unmatchedEntrySchema>
 
 /** The complete on-disk artifact `scripts/refresh` writes and the site loads. This is the
  *  contract between the two halves of the project: everything else is written against it. */
-export const snapshotSchema = z.object({
-  schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
-  generatedAt: z.iso.datetime(),
-  source: z.object({
-    aaIndexVersion: z.number(),
-    attribution: z.literal('Artificial Analysis (artificialanalysis.ai)'),
-  }),
-  coverage: coverageSchema,
-  unmatched: z.array(unmatchedEntrySchema),
-  models: z.array(modelRowSchema),
-})
+export const snapshotSchema = z
+  .object({
+    schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
+    generatedAt: z.iso.datetime(),
+    source: z.object({
+      aaIndexVersion: z.number(),
+      attribution: z.literal('Artificial Analysis (artificialanalysis.ai)'),
+    }),
+    coverage: coverageSchema,
+    unmatched: z.array(unmatchedEntrySchema),
+    models: z.array(modelRowSchema),
+  })
+  // Coverage is derived from models, so a snapshot claiming counts the rows cannot support
+  // is malformed. Enforced here, so both the writer and the browser loader get it free.
+  .refine((snapshot) => snapshot.coverage.totalRows === snapshot.models.length, {
+    message: 'coverage.totalRows must equal models.length',
+    path: ['coverage', 'totalRows'],
+  })
+  .refine(
+    (snapshot) =>
+      (['resolved', 'intelligence', 'coding', 'agentic', 'aaCostPerTask'] as const).every(
+        (key) => snapshot.coverage[key] <= snapshot.coverage.totalRows,
+      ),
+    { message: 'each coverage count must be <= totalRows', path: ['coverage'] },
+  )
 
 /** One row of the table and one point on the charts. */
 export type ModelRow = z.infer<typeof modelRowSchema>

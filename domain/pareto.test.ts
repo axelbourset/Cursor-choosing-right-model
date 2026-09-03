@@ -5,7 +5,9 @@ import { computePareto, isOnFrontier } from './pareto'
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
     cursorName: 'Test Model',
-    cursorSlug: 'test-model',
+    // Derived from the name so fixture rows get distinct slugs, as real snapshots do
+    // (resolve.ts emits one declaration per catalogue row, and ModelTable keys on it).
+    cursorSlug: (overrides.cursorName ?? 'test-model').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     provider: 'Test Provider',
     hidden: false,
     aaSlug: 'test-aa-slug',

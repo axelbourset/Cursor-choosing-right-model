@@ -14,8 +14,10 @@ export function priceForAxis(row: ModelRow, costAxis: CostAxisKey): number | nul
     case 'cacheRead':
       return row.priceCacheRead
     default: {
+      // Throws rather than returning the unhandled value: returning it would let a bad
+      // axis flow into the frontier maths as if it were a price.
       const exhaustive: never = costAxis
-      return exhaustive
+      throw new Error(`unhandled cost axis: ${String(exhaustive)}`)
     }
   }
 }

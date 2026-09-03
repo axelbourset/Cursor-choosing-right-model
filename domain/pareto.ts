@@ -4,8 +4,9 @@ import { toPricedRow, type PricedRow } from './price'
 export type ParetoResult = {
   /** Rows on the frontier, ascending by active cost axis. */
   readonly frontier: readonly ModelRow[]
-  /** The same rows as a set, so `isOnFrontier` is O(1) rather than O(n) per lookup. */
-  readonly frontierSet: ReadonlySet<ModelRow>
+  /** Frontier membership by `cursorSlug`, so `isOnFrontier` is O(1) and survives a row
+   *  being cloned or re-parsed — object identity would silently stop matching. */
+  readonly frontierSlugs: ReadonlySet<string>
   /** Rows considered but dominated. */
   readonly dominated: readonly ModelRow[]
   /** Rows excluded because score or cost was null/zero. */
@@ -54,7 +55,7 @@ export function computePareto(
 
   return {
     frontier: frontier.map((priced) => priced.row),
-    frontierSet: new Set(frontier.map((priced) => priced.row)),
+    frontierSlugs: new Set(frontier.map((priced) => priced.row.cursorSlug)),
     dominated,
     excluded,
   }
@@ -71,7 +72,7 @@ export function makeParetoResult(parts: {
 }): ParetoResult {
   return {
     frontier: parts.frontier,
-    frontierSet: new Set(parts.frontier),
+    frontierSlugs: new Set(parts.frontier.map((row) => row.cursorSlug)),
     dominated: parts.dominated,
     excluded: parts.excluded,
   }
@@ -79,5 +80,5 @@ export function makeParetoResult(parts: {
 
 /** Convenience membership test. O(1) — the chart calls it once per row. */
 export function isOnFrontier(row: ModelRow, result: ParetoResult): boolean {
-  return result.frontierSet.has(row)
+  return result.frontierSlugs.has(row.cursorSlug)
 }
