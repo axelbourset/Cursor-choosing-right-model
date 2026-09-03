@@ -65,6 +65,8 @@ function createFixtureDeps(overrides: Partial<RefreshDeps> = {}): {
       files: writer,
       now: overrides.now ?? (() => '2026-08-21T12:00:00.000Z'),
       minExpectedAaModels: overrides.minExpectedAaModels ?? 40,
+      overrides: overrides.overrides ?? new Map(),
+      previousSnapshot: overrides.previousSnapshot ?? null,
     },
     calls,
     transportCalls,
@@ -117,6 +119,8 @@ describe('runRefresh', () => {
         files: writer,
         now: () => '2026-08-21T12:00:00.000Z',
         minExpectedAaModels: 40,
+        overrides: new Map(),
+        previousSnapshot: null,
       },
       'fixture',
     )
@@ -150,6 +154,8 @@ describe('runRefresh', () => {
         files: writer,
         now: () => '2026-08-21T12:00:00.000Z',
         minExpectedAaModels: 1,
+        overrides: new Map(),
+        previousSnapshot: null,
       },
       'fixture',
     )
@@ -158,22 +164,42 @@ describe('runRefresh', () => {
     expect(calls.writeFile).toHaveLength(0)
   })
 
-  test('6 — join throws stale-alias error: error matching /stale alias/, writeFile never called', async () => {
+  test('6 — an override naming a dead AA slug still fails loudly, writing nothing', () => {
+    // Derived mappings cannot go stale: they are read from the live payload every run. A
+    // stale target can now only come from a hand-written override, which must still throw.
+    return (async () => {
+      const { writer, calls } = createFakeWriter()
+      const { deps } = createFixtureDeps({
+        files: writer,
+        overrides: new Map([
+          ['Claude Opus 5', { aaSlug: 'no-such-slug', reason: 'typo in the slug' }],
+        ]),
+      })
+
+      const result = await runRefresh({ ...deps, files: writer }, 'fixture')
+
+      expect(result.kind).toBe('error')
+      if (result.kind === 'error') {
+        expect(result.message).toMatch(/stale alias/)
+      }
+      expect(calls.writeFile).toHaveLength(0)
+    })()
+  })
+
+  test('6b — a renamed AA slug degrades to unresolved instead of failing the run', async () => {
     const { writer, calls } = createFakeWriter()
     const base = fixtureTransport(readFixture)
     const transport: Transport = async (url, headers) => {
       if (url.includes('/language/models/free')) {
         const response = await base(url, headers)
-        const envelope = (await response.json()) as {
-          data: Array<{ slug: string }>
-        }
+        const envelope = (await response.json()) as { data: Array<{ slug: string }> }
         return {
           status: 200,
           headers: response.headers,
           json: async () => ({
             ...envelope,
             data: envelope.data.map((record) =>
-              record.slug === 'grok-4-6' ? { ...record, slug: 'removed-slug' } : record,
+              record.slug === 'grok-4-6' ? { ...record, slug: 'renamed-slug' } : record,
             ),
           }),
           text: response.text,
@@ -188,15 +214,15 @@ describe('runRefresh', () => {
         files: writer,
         now: () => '2026-08-21T12:00:00.000Z',
         minExpectedAaModels: 40,
+        overrides: new Map(),
+        previousSnapshot: null,
       },
       'fixture',
     )
 
-    expect(result.kind).toBe('error')
-    if (result.kind === 'error') {
-      expect(result.message).toMatch(/stale alias/)
-    }
-    expect(calls.writeFile).toHaveLength(0)
+    expect(result.kind).toBe('ok')
+    const snapshot = snapshotSchema.parse(JSON.parse(calls.writeFile[0]!.data))
+    expect(snapshot.models.find((m) => m.cursorName === 'Grok 4.6')?.aaSlug).toBeNull()
   })
 
   test('7 — writeSnapshot rejects mid-write: error propagated, not swallowed', async () => {
@@ -215,6 +241,8 @@ describe('runRefresh', () => {
         files: writer,
         now: () => '2026-08-21T12:00:00.000Z',
         minExpectedAaModels: 40,
+        overrides: new Map(),
+        previousSnapshot: null,
       },
       'fixture',
     )
@@ -247,6 +275,128 @@ describe('runRefresh', () => {
     expect(result.kind).toBe('ok')
     if (result.kind === 'ok') {
       expect(result.lines.some((line) => line.startsWith('Coverage:'))).toBe(true)
+    }
+  })
+
+  test('11 — a new upstream model needs no human action: it is resolved and included', async () => {
+    const { writer, calls } = createFakeWriter()
+    const base = fixtureTransport(readFixture)
+    const transport: Transport = async (url, headers) => {
+      if (url.includes('/docs/models-and-pricing.md')) {
+        const response = await base(url, headers)
+        const markdown = await response.text()
+        // `gpt-5` exists in the AA fixture, so the rule resolves this with no declaration.
+        return {
+          ...response,
+          text: async () =>
+            markdown.replace(
+              '| Grok 4.6 ',
+              '| GPT-5 Fast | OpenAI | $9 | - | $1 | $30 | - |\n| Grok 4.6 ',
+            ),
+        }
+      }
+      return base(url, headers)
+    }
+
+    const result = await runRefresh(
+      {
+        transport,
+        files: writer,
+        now: () => '2026-08-21T12:00:00.000Z',
+        minExpectedAaModels: 40,
+        overrides: new Map(),
+        previousSnapshot: null,
+      },
+      'fixture',
+    )
+
+    expect(result.kind).toBe('ok')
+    const snapshot = snapshotSchema.parse(JSON.parse(calls.writeFile[0]!.data))
+    const row = snapshot.models.find((m) => m.cursorName === 'GPT-5 Fast')
+    expect(row?.aaSlug).toBe('gpt-5')
+    expect(row?.intelligence).not.toBeNull()
+  })
+
+  test('12 — a removed upstream model simply disappears, with no error', async () => {
+    const { writer, calls } = createFakeWriter()
+    const base = fixtureTransport(readFixture)
+    const transport: Transport = async (url, headers) => {
+      if (url.includes('/docs/models-and-pricing.md')) {
+        const response = await base(url, headers)
+        const markdown = await response.text()
+        return {
+          ...response,
+          text: async () =>
+            markdown
+              .split('\n')
+              .filter((line) => !line.startsWith('| [Kimi K3]'))
+              .join('\n'),
+        }
+      }
+      return base(url, headers)
+    }
+
+    const result = await runRefresh(
+      {
+        transport,
+        files: writer,
+        now: () => '2026-08-21T12:00:00.000Z',
+        minExpectedAaModels: 40,
+        overrides: new Map(),
+        previousSnapshot: null,
+      },
+      'fixture',
+    )
+
+    expect(result.kind).toBe('ok')
+    const snapshot = snapshotSchema.parse(JSON.parse(calls.writeFile[0]!.data))
+    expect(snapshot.models.some((m) => m.cursorName === 'Kimi K3')).toBe(false)
+  })
+
+  test('13 — an override replaces the derived mapping', async () => {
+    const { deps, calls } = createFixtureDeps({
+      overrides: new Map([
+        ['Claude Opus 5', { aaSlug: 'gpt-5', reason: 'deliberately wrong, for the test' }],
+      ]),
+    })
+
+    const result = await runRefresh(deps, 'fixture')
+
+    expect(result.kind).toBe('ok')
+    const snapshot = snapshotSchema.parse(JSON.parse(calls.writeFile[0]!.data))
+    const row = snapshot.models.find((m) => m.cursorName === 'Claude Opus 5')
+    expect(row?.aaSlug).toBe('gpt-5')
+    expect(row?.aaVariantNote).toMatch(/override: deliberately wrong/)
+  })
+
+  test('14 — changes since the previous snapshot are reported, never fatal', async () => {
+    const { deps: firstDeps, calls: firstCalls } = createFixtureDeps()
+    await runRefresh(firstDeps, 'fixture')
+    const previousSnapshot = snapshotSchema.parse(JSON.parse(firstCalls.writeFile[0]!.data))
+
+    const { deps } = createFixtureDeps({
+      previousSnapshot,
+      overrides: new Map([['Claude Opus 5', { aaSlug: 'gpt-5', reason: 'remapped on purpose' }]]),
+    })
+
+    const result = await runRefresh(deps, 'fixture')
+
+    expect(result.kind).toBe('ok')
+    if (result.kind === 'ok') {
+      expect(result.changeLines.join('\n')).toMatch(/~ Claude Opus 5: claude-opus-5 -> gpt-5/)
+    }
+  })
+
+  test('15 — an override for a model Cursor does not publish is reported, not fatal', async () => {
+    const { deps } = createFixtureDeps({
+      overrides: new Map([['Not A Real Model', { aaSlug: null, reason: 'stale entry' }]]),
+    })
+
+    const result = await runRefresh(deps, 'fixture')
+
+    expect(result.kind).toBe('ok')
+    if (result.kind === 'ok') {
+      expect(result.changeLines.join('\n')).toMatch(/Unused override: Not A Real Model/)
     }
   })
 

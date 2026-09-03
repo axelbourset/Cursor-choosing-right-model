@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import type { ModelRow, Snapshot } from '@schema/snapshot'
 import { computeCoverage } from '@domain/coverage'
-import { buildReport } from './report'
+import { buildChangeReport, buildReport } from './report'
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
@@ -160,5 +160,47 @@ describe('buildReport', () => {
     expect(logSpy).not.toHaveBeenCalled()
 
     logSpy.mockRestore()
+  })
+})
+
+describe('buildChangeReport', () => {
+  test('1 — a first run with nothing to compare produces no lines', () => {
+    expect(buildChangeReport({ added: [], removed: [], remapped: [] }, [])).toEqual([])
+  })
+
+  test('2 — an added model is listed', () => {
+    const lines = buildChangeReport({ added: ['Claude Fable 5.1'], removed: [], remapped: [] }, [])
+
+    expect(lines.join('\n')).toMatch(/\+ Claude Fable 5\.1/)
+  })
+
+  test('3 — a removed model says why it vanished', () => {
+    const lines = buildChangeReport({ added: [], removed: ['Retired'], remapped: [] }, [])
+
+    expect(lines.join('\n')).toMatch(/- Retired \(no longer published by Cursor\)/)
+  })
+
+  test('4 — a remapped model shows both slugs', () => {
+    const lines = buildChangeReport(
+      { added: [], removed: [], remapped: [{ cursorName: 'X', from: 'old-slug', to: 'new-slug' }] },
+      [],
+    )
+
+    expect(lines.join('\n')).toMatch(/~ X: old-slug -> new-slug/)
+  })
+
+  test('5 — a mapping that gained or lost an AA record reads clearly', () => {
+    const lines = buildChangeReport(
+      { added: [], removed: [], remapped: [{ cursorName: 'X', from: null, to: 'now-scored' }] },
+      [],
+    )
+
+    expect(lines.join('\n')).toMatch(/~ X: no AA record -> now-scored/)
+  })
+
+  test('6 — an override naming a model Cursor no longer publishes is flagged', () => {
+    const lines = buildChangeReport({ added: [], removed: [], remapped: [] }, ['Ghost Model'])
+
+    expect(lines.join('\n')).toMatch(/Unused override: Ghost Model .* safe to delete/)
   })
 })

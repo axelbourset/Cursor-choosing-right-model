@@ -37,7 +37,7 @@ export function ModelTable({ rows }: ModelTableProps) {
           <input
             type="search"
             className="model-table-search__input"
-            placeholder="Filter by model, provider, or slug…"
+            placeholder="Filter by model or provider…"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             aria-label="Search models"

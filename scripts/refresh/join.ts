@@ -1,5 +1,5 @@
 import type { ModelRow, UnmatchedEntry } from '@schema/snapshot'
-import type { CursorModelDeclaration } from './aliases'
+import type { CursorModelDeclaration } from './declaration'
 import type { AaModel } from './fetchArtificialAnalysis'
 import type { CursorPrice } from './fetchCursorPricingJson'
 import type { CursorCatalogueRow } from './parseCursorMarkdown'
@@ -86,9 +86,13 @@ function buildCatalogueIndex(
   return index
 }
 
-/** Declarations are INJECTED, not imported. T17's tests use small hand-made sets;
- *  only the CLI passes the real 47. Importing DECLARATIONS statically would make
- *  test case 14 impossible without module mocking. */
+/** Declarations are INJECTED, not imported — the CLI passes the set `resolve.ts` derived
+ *  from the live catalogue.
+ *
+ *  Every guard below still throws, and all of them now describe OUR data being wrong rather
+ *  than upstream having moved: `resolve.ts` produces exactly one declaration per catalogue
+ *  row, so a membership failure here is an internal invariant violation, and a stale alias
+ *  can only come from a hand-written override naming a slug AA no longer publishes. */
 export function joinModels(input: JoinInput): JoinResult {
   const { declarations, catalogue, pricing, aaModels } = input
   const declarationNames = new Set(declarations.map((d) => d.cursorName))
@@ -127,10 +131,7 @@ export function joinModels(input: JoinInput): JoinResult {
         aaCostPerTask: null,
         ...prices,
       })
-      unresolved.push({
-        cursorName: declaration.cursorName,
-        reason: 'no AA benchmark data for this model',
-      })
+      unresolved.push({ cursorName: declaration.cursorName, reason: declaration.note })
       continue
     }
 

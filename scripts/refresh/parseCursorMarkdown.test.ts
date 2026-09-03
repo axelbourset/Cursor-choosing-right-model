@@ -110,20 +110,66 @@ describe('parseCursorMarkdown', () => {
     expectCursorMarkdownError(() => parseCursorMarkdown(markdown), /header not found/)
   })
 
-  test('10 — the small fixture with expectedRows: 99 throws matching /expected 99/ and reporting 5', async () => {
+  test('10 — a row count below the truncation floor throws, naming the floor and the count', async () => {
     const markdown = await loadFixture('cursor-models-small.fixture.md')
 
-    expect(() => parseCursorMarkdown(markdown, 99)).toThrow(CursorMarkdownError)
-    expect(() => parseCursorMarkdown(markdown, 99)).toThrow(/expected 99/)
-    expect(() => parseCursorMarkdown(markdown, 99)).toThrow(/5/)
+    expectCursorMarkdownError(() => parseCursorMarkdown(markdown, 99), /below floor 99/)
+    expectCursorMarkdownError(() => parseCursorMarkdown(markdown, 99), /5/)
   })
 
-  test('13 — fixtures/cursor-models.fixture.md with expectedRows: 47 yields 47 rows', async () => {
+  test('10b — a catalogue larger than expected is NOT an error', async () => {
     const markdown = await loadFixture('cursor-models.fixture.md')
 
-    const rows = parseCursorMarkdown(markdown, 47)
+    // The whole point: models appearing upstream is normal, and `resolve.ts` absorbs it.
+    expect(() => parseCursorMarkdown(markdown, 20)).not.toThrow()
+  })
 
-    expect(rows.length).toBe(47)
+  test('10c — a header whose seven columns are reordered is not a model table', () => {
+    const markdown = [
+      '| Provider | Model | Input | Cache write | Cache read | Output | Notes |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| Anthropic | Claude Opus 5 | $5 | $6.25 | $0.5 | $25 | - |',
+    ].join('\n')
+
+    expectCursorMarkdownError(() => parseCursorMarkdown(markdown, 1), /header not found/)
+  })
+
+  test('13 — the real fixture yields the union of both seven-column tables, deduplicated', async () => {
+    const markdown = await loadFixture('cursor-models.fixture.md')
+
+    const rows = parseCursorMarkdown(markdown)
+
+    // The "Cursor Models" pool table and the "Model pricing" table both match the header.
+    expect(findByName(rows, 'Grok 4.6').provider).toBe('Cursor')
+    expect(findByName(rows, 'Claude Opus 5').provider).toBe('Anthropic')
+    expect(new Set(rows.map((row) => row.name)).size).toBe(rows.length)
+    // Asserted as a floor, never an equality: the catalogue is expected to grow.
+    expect(rows.length).toBeGreaterThanOrEqual(20)
+  })
+
+  test('13b — an unreadable price cell becomes null, never NaN', async () => {
+    // NaN typed as `number` defeats the `no price source` guard and then fails snapshot
+    // validation naming an array index rather than the model.
+    const markdown = [
+      '| Model | Provider | Input | Cache write | Cache read | Output | Notes |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| Odd Model | OpenAI | Free | - | $1 | $30 | - |',
+    ].join('\n')
+
+    const rows = parseCursorMarkdown(markdown, 1)
+
+    expect(rows[0]!.input).toBeNull()
+    expect(rows[0]!.cacheRead).toBe(1)
+    expect(rows[0]!.output).toBe(30)
+  })
+
+  test('14 — the Plans table on the same page contributes 0 rows', async () => {
+    const markdown = await loadFixture('cursor-models.fixture.md')
+
+    const rows = parseCursorMarkdown(markdown)
+
+    expect(rows.find((row) => row.name === 'Pro')).toBeUndefined()
+    expect(rows.every((row) => row.provider !== 'Price')).toBe(true)
   })
 
   test('11 — empty string throws matching /header not found/', () => {

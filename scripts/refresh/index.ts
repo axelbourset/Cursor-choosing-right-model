@@ -2,18 +2,30 @@ import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { computeCoverage } from '@domain/coverage'
-import type { Snapshot } from '@schema/snapshot'
-import { DECLARATIONS } from './aliases'
+import { snapshotSchema, type Snapshot } from '@schema/snapshot'
+import { diffSnapshots } from './changes'
 import { fetchArtificialAnalysis } from './fetchArtificialAnalysis'
 import { fetchCursorMarkdown } from './fetchCursorMarkdown'
 import { fetchCursorPricingJson } from './fetchCursorPricingJson'
 import { fixtureTransport } from './fixtureTransport'
 import { loadRepoEnv } from './loadEnv'
 import { joinModels } from './join'
+import { parseOverrides, OVERRIDES_PATH, type Overrides } from './overrides'
 import { parseCursorMarkdown } from './parseCursorMarkdown'
-import { buildReport } from './report'
+import { buildChangeReport, buildReport } from './report'
+import { resolveDeclarations } from './resolve'
 import type { Transport } from './transport'
-import { writeSnapshot, type SnapshotFileWriter } from './writeSnapshot'
+import { writeSnapshot, SNAPSHOT_PATH, type SnapshotFileWriter } from './writeSnapshot'
+
+/** Best-effort: a missing or unreadable previous snapshot just means "no changes to show". */
+async function readPreviousSnapshot(snapshotPath: string): Promise<Snapshot | null> {
+  try {
+    const parsed = snapshotSchema.safeParse(JSON.parse(await readFile(snapshotPath, 'utf-8')))
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}
 
 export type RefreshDeps = {
   readonly transport: Transport
@@ -21,22 +33,32 @@ export type RefreshDeps = {
   readonly now: () => string
   /** Passed explicitly at the composition root — 100 in real mode, 40 in fixture mode. */
   readonly minExpectedAaModels: number
+  /** Hand-written exceptions to the derived mapping. Normally empty. */
+  readonly overrides: Overrides
+  /** The snapshot on disk before this run, for change reporting. Null on a first run. */
+  readonly previousSnapshot: Snapshot | null
 }
 
 export type RefreshOutcome =
-  | { readonly kind: 'ok'; readonly lines: readonly string[] }
+  | {
+      readonly kind: 'ok'
+      readonly lines: readonly string[]
+      /** What moved since the previous run. Informational; never affects the exit code. */
+      readonly changeLines: readonly string[]
+    }
   | { readonly kind: 'error'; readonly message: string }
 
 export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<RefreshOutcome> {
-  const { transport, files, now, minExpectedAaModels } = deps
+  const { transport, files, now, minExpectedAaModels, overrides, previousSnapshot } = deps
 
   try {
     const aaResult = await fetchArtificialAnalysis(apiKey, transport, minExpectedAaModels)
     const pricing = await fetchCursorPricingJson(transport)
     const markdown = await fetchCursorMarkdown(transport)
-    const catalogue = parseCursorMarkdown(markdown, 47)
+    const catalogue = parseCursorMarkdown(markdown)
+    const resolved = resolveDeclarations(overrides, catalogue, aaResult.models)
     const joinResult = joinModels({
-      declarations: DECLARATIONS,
+      declarations: resolved.declarations,
       catalogue,
       pricing,
       aaModels: aaResult.models,
@@ -55,7 +77,12 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
     }
     await writeSnapshot(snapshot, files)
     const lines = buildReport(snapshot, aaResult.rateLimitRemaining)
-    return { kind: 'ok', lines }
+    const changes = diffSnapshots(previousSnapshot, snapshot.models)
+    return {
+      kind: 'ok',
+      lines,
+      changeLines: buildChangeReport(changes, resolved.unusedOverrides),
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return { kind: 'error', message }
@@ -109,8 +136,19 @@ async function main(): Promise<void> {
     unlink: (filePath) => unlink(filePath).then(() => undefined),
   }
 
+  const overrides = parseOverrides(
+    JSON.parse(await readFile(path.join(repoRoot, OVERRIDES_PATH), 'utf-8')),
+  )
+
   const result = await runRefresh(
-    { transport, files, now: () => new Date().toISOString(), minExpectedAaModels },
+    {
+      transport,
+      files,
+      now: () => new Date().toISOString(),
+      minExpectedAaModels,
+      overrides,
+      previousSnapshot: await readPreviousSnapshot(path.join(repoRoot, SNAPSHOT_PATH)),
+    },
     apiKey,
   )
 
@@ -120,6 +158,10 @@ async function main(): Promise<void> {
   }
 
   for (const line of result.lines) {
+    console.log(line)
+  }
+
+  for (const line of result.changeLines) {
     console.log(line)
   }
 }

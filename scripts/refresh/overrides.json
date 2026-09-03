@@ -1,0 +1,21 @@
+{
+  "//": [
+    "Exceptions to the automatic Cursor -> Artificial Analysis mapping (see autoResolve.ts).",
+    "Empty is normal: the mapping is derived every run, so adding a model needs nothing here.",
+    "Key = the Cursor display name, exactly. aaSlug = the AA slug, or null for no scores.",
+    "Copy an entry from //example into overrides to use it. Unknown keys fail the refresh."
+  ],
+
+  "//example": {
+    "Some Model": {
+      "aaSlug": "some-model-ultra",
+      "reason": "AA serves this under an effort suffix the rule does not know"
+    },
+    "Some Colliding Model": {
+      "aaSlug": null,
+      "reason": "the rule picks a different model with a colliding name; no scores beats wrong ones"
+    }
+  },
+
+  "overrides": {}
+}

@@ -24,12 +24,19 @@ function splitCells(line: string): string[] {
   return parts.slice(1, -1).map((cell) => cell.trim())
 }
 
+/** The seven columns must appear in order, one per cell. This — not a row count — is what
+ *  keeps a foreign table out of the parse: the Plans table on the same page is
+ *  `Plan | Price | Cursor Models | Other Models` and cannot match. */
 function isModelTableHeader(line: string): boolean {
   if (!line.startsWith('|')) {
     return false
   }
 
-  return HEADER_COLUMNS.every((column) => line.includes(column))
+  const cells = splitCells(line)
+  return (
+    cells.length === HEADER_COLUMNS.length &&
+    HEADER_COLUMNS.every((column, index) => cells[index] === column)
+  )
 }
 
 function isSeparatorRow(line: string): boolean {
@@ -42,6 +49,13 @@ function stripModelLink(cell: string): string {
   return match?.[1] ?? cell
 }
 
+/** `Number()` returns NaN rather than failing, and NaN typed as `number` is an inaccurate
+ *  type: it defeats the `no price source` guard (which tests `!== null`) and then fails
+ *  snapshot validation with a message naming an array index instead of a model.
+ *
+ *  An unreadable cell becomes null — "not measured", the value the schema already models —
+ *  so one odd cell degrades that single price instead of the run. A wholesale format change
+ *  is still loud: every price for a model turns null, and `resolvePrices` throws naming it. */
 function parsePrice(cell: string): number | null {
   const trimmed = cell.trim()
   if (trimmed === '' || trimmed === '-') {
@@ -49,7 +63,8 @@ function parsePrice(cell: string): number | null {
   }
 
   const withoutDollar = trimmed.startsWith('$') ? trimmed.slice(1) : trimmed
-  return Number(withoutDollar)
+  const value = Number(withoutDollar)
+  return Number.isFinite(value) ? value : null
 }
 
 function parseDataRow(line: string): CursorCatalogueRow | null {
@@ -74,11 +89,15 @@ function parseDataRow(line: string): CursorCatalogueRow | null {
   }
 }
 
-/** PURE. No network, no fs. */
-export function parseCursorMarkdown(
-  markdown: string,
-  expectedRows = 47,
-): readonly CursorCatalogueRow[] {
+/** PURE. No network, no fs.
+ *
+ *  Cursor publishes its catalogue across two seven-column tables (the "Cursor Models" pool
+ *  and "Model pricing"); both are parsed and the union is deduplicated by name.
+ *
+ *  There is deliberately NO expected-row-count check. Models appearing and disappearing is
+ *  normal upstream behaviour, absorbed downstream by `resolve.ts`. `minRows` is a truncation
+ *  floor only — the same idiom the other three sources use. */
+export function parseCursorMarkdown(markdown: string, minRows = 20): readonly CursorCatalogueRow[] {
   const lines = markdown.split(/\r?\n/)
   const rows: CursorCatalogueRow[] = []
   let foundHeader = false
@@ -127,8 +146,10 @@ export function parseCursorMarkdown(
     deduped.push(row)
   }
 
-  if (deduped.length !== expectedRows) {
-    throw new CursorMarkdownError(`expected ${expectedRows} model rows but found ${deduped.length}`)
+  if (deduped.length < minRows) {
+    throw new CursorMarkdownError(
+      `model row count ${deduped.length} below floor ${minRows} — the page looks truncated`,
+    )
   }
 
   return deduped

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { CursorModelDeclaration } from './aliases'
+import type { CursorModelDeclaration } from './declaration'
 import type { AaModel } from './fetchArtificialAnalysis'
 import type { CursorPrice } from './fetchCursorPricingJson'
 import { JoinError, joinModels } from './join'
@@ -11,9 +11,9 @@ function decl(
 ): CursorModelDeclaration {
   return {
     aaSlug: 'fixture-aa',
-    isAlias: false,
     allowNonReasoning: false,
     note: 'test note',
+    origin: 'auto',
     ...overrides,
   }
 }
@@ -97,9 +97,14 @@ describe('joinModels', () => {
     expect(result.unresolved).toHaveLength(0)
   })
 
-  test('2 — declaration with aaSlug: null', () => {
+  test("2 — declaration with aaSlug: null carries the declaration's own reason", () => {
     const declarations = [
-      decl({ cursorName: 'Unbenchmarked', cursorSlug: 'unbenchmarked', aaSlug: null }),
+      decl({
+        cursorName: 'Unbenchmarked',
+        cursorSlug: 'unbenchmarked',
+        aaSlug: null,
+        note: 'no AA record in the unbenchmarked family',
+      }),
     ]
     const catalogueRows = [catalogue({ name: 'Unbenchmarked' })]
     const pricingRows = [pricing({ slug: 'unbenchmarked' })]
@@ -123,11 +128,11 @@ describe('joinModels', () => {
     expect(result.unresolved).toHaveLength(1)
     expect(result.unresolved[0]).toEqual({
       cursorName: 'Unbenchmarked',
-      reason: expect.stringContaining('no AA'),
+      reason: 'no AA record in the unbenchmarked family',
     })
   })
 
-  test('3 — catalogue row not in DECLARATIONS', () => {
+  test('3 — catalogue row not in the declaration set', () => {
     const declarations = [decl({ cursorName: 'Model A', cursorSlug: 'model-a' })]
     const catalogueRows = [catalogue({ name: 'Model A' }), catalogue({ name: 'Orphan Row' })]
 
@@ -283,7 +288,6 @@ describe('joinModels', () => {
         cursorName: 'Base Model (Fast)',
         cursorSlug: 'base-model-fast',
         aaSlug: 'shared-aa',
-        isAlias: true,
       }),
     ]
     const catalogueRows = [
@@ -324,7 +328,6 @@ describe('joinModels', () => {
         cursorName: 'Base Model (Fast)',
         cursorSlug: 'base-model-fast',
         aaSlug: 'shared-aa',
-        isAlias: true,
       }),
     ]
 
