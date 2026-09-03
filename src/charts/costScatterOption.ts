@@ -33,6 +33,18 @@ type ScatterPoint = {
   }
 }
 
+/** ECharts injects the tooltip via innerHTML (renderMode defaults to 'html'), and the
+ *  snapshot is user-supplied through the drop zone, so every string field is untrusted.
+ *  `cursorName` and `provider` are only `z.string().min(1)` in the schema. */
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
 function fmtScore(value: number | null): string {
   return value === null ? '—' : String(Math.round(value * 10) / 10)
 }
@@ -45,7 +57,11 @@ function fmtPrice(value: number | null): string {
 }
 
 function isScatterPoint(value: unknown): value is ScatterPoint {
-  return typeof value === 'object' && value !== null && 'row' in value
+  if (typeof value !== 'object' || value === null || !('row' in value)) {
+    return false
+  }
+  const row: unknown = value.row
+  return typeof row === 'object' && row !== null && 'cursorName' in row && 'provider' in row
 }
 
 function scatterPoint(
@@ -159,14 +175,17 @@ export function buildCostScatterOption(
       formatter: (params: unknown) => {
         // The line series' data entries are bare [x, y] tuples with no row, so this guard
         // is load-bearing rather than defensive.
-        const data = (params as { data?: unknown }).data
+        if (typeof params !== 'object' || params === null || !('data' in params)) {
+          return ''
+        }
+        const data: unknown = params.data
         if (!isScatterPoint(data)) {
           return ''
         }
         const row = data.row
         return [
-          `<strong style="color:${theme.textPrimary}">${row.cursorName}</strong>`,
-          row.provider,
+          `<strong style="color:${theme.textPrimary}">${escapeHtml(row.cursorName)}</strong>`,
+          escapeHtml(row.provider),
           `Input: <b>${fmtPrice(row.priceInput)}</b> / 1M tokens`,
           `Output: <b>${fmtPrice(row.priceOutput)}</b> / 1M tokens`,
           `Cache read: <b>${fmtPrice(row.priceCacheRead)}</b> / 1M tokens`,

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { ModelRow } from '@schema/snapshot'
 import { DEFAULT_FILTERS } from '@domain/selection'
+import * as echarts from 'echarts'
 import { CostScatterChart } from './CostScatterChart'
 
 const setOption = vi.fn()
@@ -316,5 +317,35 @@ describe('CostScatterChart', () => {
       />,
     )
     expect(scatterXValues()).toEqual(expect.arrayContaining([10.0, 20.0]))
+  })
+
+  test('a prop change updates the chart in place instead of re-creating it', () => {
+    // The regression this pins: `option` was built in the render body and used as the
+    // effect's dependency, so every toolbar change disposed and re-initialised the chart,
+    // discarding animation, hover and tooltip state.
+    vi.mocked(echarts.init).mockClear()
+    setOption.mockClear()
+
+    const rows = [makeRow({ cursorName: 'A', intelligence: 50, priceInput: 1 })]
+    const props = {
+      rows,
+      filters: DEFAULT_FILTERS,
+      providers: [],
+      costAxis: 'input' as const,
+      showFrontier: false,
+      onFiltersChange: vi.fn(),
+      onMetricChange: vi.fn(),
+      onCostAxisChange: vi.fn(),
+      onFrontierChange: vi.fn(),
+    }
+
+    const { rerender } = render(<CostScatterChart {...props} metric="intelligence" />)
+    expect(echarts.init).toHaveBeenCalledTimes(1)
+    const afterMount = setOption.mock.calls.length
+
+    rerender(<CostScatterChart {...props} metric="coding" />)
+
+    expect(echarts.init).toHaveBeenCalledTimes(1)
+    expect(setOption.mock.calls.length).toBeGreaterThan(afterMount)
   })
 })

@@ -8,7 +8,7 @@
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
-export function hexToRgb(hex: string): [number, number, number] {
+function hexToRgb(hex: string): [number, number, number] {
   if (!HEX_RE.test(hex)) {
     throw new Error(`expected a 6-digit hex string, got "${hex}"`)
   }
@@ -21,7 +21,7 @@ function srgbToLinear(c: number): number {
 }
 
 /** OkLab coordinates of a hex colour — the perceptual space the palette is built in. */
-export function hexToOklab(hex: string): [number, number, number] {
+function hexToOklab(hex: string): [number, number, number] {
   const [r, g, b] = hexToRgb(hex)
   const lr = srgbToLinear(r)
   const lg = srgbToLinear(g)

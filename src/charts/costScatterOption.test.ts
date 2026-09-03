@@ -7,7 +7,9 @@ import { colorForProvider } from './providerColors'
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
     cursorName: 'Test Model',
-    cursorSlug: 'test-model',
+    // Derived from the name so fixture rows get distinct slugs, as real snapshots do
+    // (resolve.ts emits one declaration per catalogue row, and ModelTable keys on it).
+    cursorSlug: (overrides.cursorName ?? 'test-model').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     provider: 'Test Provider',
     hidden: false,
     aaSlug: 'test-aa-slug',
@@ -249,5 +251,37 @@ describe('buildCostScatterOption', () => {
     for (const scatter of scatters) {
       expect(scatter.symbol).toBe('circle')
     }
+  })
+
+  test('13 — tooltip escapes model and provider strings', () => {
+    // ECharts injects the tooltip with innerHTML and the snapshot is user-supplied, so a
+    // crafted cursorName would otherwise execute in the page origin on hover.
+    const evil = makeRow({
+      cursorName: '<img src=x onerror="alert(1)">',
+      provider: '<script>alert(2)</script>',
+      intelligence: 50,
+      priceInput: 2,
+    })
+    const option = buildCostScatterOption(
+      makeParetoResult({ frontier: [evil], dominated: [], excluded: [] }),
+      'intelligence',
+      'input',
+      false,
+    )
+    const formatter = (option.tooltip as { formatter: (params: unknown) => string }).formatter
+    const html = formatter({ data: { row: evil, value: [2, 50] } })
+
+    expect(html).not.toContain('<img')
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('&lt;img')
+  })
+
+  test('14 — the tooltip guard rejects a malformed data payload', () => {
+    const option = buildCostScatterOption(pareto, 'intelligence', 'input', false)
+    const formatter = (option.tooltip as { formatter: (params: unknown) => string }).formatter
+
+    expect(formatter({ data: { row: 5 } })).toBe('')
+    expect(formatter('nonsense')).toBe('')
+    expect(formatter(null)).toBe('')
   })
 })
