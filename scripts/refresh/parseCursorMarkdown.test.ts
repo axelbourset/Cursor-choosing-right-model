@@ -134,6 +134,72 @@ describe('parseCursorMarkdown', () => {
     expectCursorMarkdownError(() => parseCursorMarkdown(markdown, 1), /header not found/)
   })
 
+  test('10d — an extra column between the required ones is tolerated and the right cells are read', () => {
+    // Upstream inserted `US data residency` between Output and Notes; the parser threw
+    // `models table header not found` until the columns were located by name.
+    const markdown = [
+      '| Model | Provider | Input | Cache write | Cache read | Output | US data residency | Notes |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| [Claude Opus 5.5](https://www.anthropic.com/claude/opus) | Anthropic | $5 | $6.25 | $0.5 | $25 | No | Hidden by default |',
+      '| Grok 4.7 | Cursor | $2 | - | $0.5 | $6 | Yes | Jointly trained |',
+    ].join('\n')
+
+    const rows = parseCursorMarkdown(markdown, 2)
+
+    expect(rows).toEqual([
+      {
+        name: 'Claude Opus 5.5',
+        provider: 'Anthropic',
+        hidden: true,
+        input: 5,
+        cacheWrite: 6.25,
+        cacheRead: 0.5,
+        output: 25,
+      },
+      {
+        name: 'Grok 4.7',
+        provider: 'Cursor',
+        hidden: false,
+        input: 2,
+        cacheWrite: null,
+        cacheRead: 0.5,
+        output: 6,
+      },
+    ])
+  })
+
+  test('10e — a row whose width differs from its own header is skipped', () => {
+    const markdown = [
+      '| Model | Provider | Input | Cache write | Cache read | Output | US data residency | Notes |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| Seven Cells | OpenAI | $1 | - | $0.1 | $4 | - |',
+      '| Eight Cells | OpenAI | $1 | - | $0.1 | $4 | Yes | - |',
+    ].join('\n')
+
+    const rows = parseCursorMarkdown(markdown, 1)
+
+    expect(rows.map((row) => row.name)).toEqual(['Eight Cells'])
+  })
+
+  test('10f — each table is read against its own header when their widths differ', () => {
+    const markdown = [
+      '| Model | Provider | Input | Cache write | Cache read | Output | Notes |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      '| Narrow | Cursor | $1 | - | $0.1 | $2 | Hidden by default |',
+      '',
+      '| Model | Provider | Input | Cache write | Cache read | Output | US data residency | Notes |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| Wide | Anthropic | $3 | $3.75 | $0.3 | $15 | No | - |',
+    ].join('\n')
+
+    const rows = parseCursorMarkdown(markdown, 2)
+
+    expect(rows.map((row) => [row.name, row.output, row.hidden])).toEqual([
+      ['Narrow', 2, true],
+      ['Wide', 15, false],
+    ])
+  })
+
   test('13 — the real fixture yields the union of both seven-column tables, deduplicated', async () => {
     const markdown = await loadFixture('cursor-models.fixture.md')
 

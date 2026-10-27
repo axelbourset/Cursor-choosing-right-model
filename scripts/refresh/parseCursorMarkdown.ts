@@ -21,24 +21,40 @@ const HEADER_COLUMNS = [
   'Notes',
 ] as const
 
+/** Where each of `HEADER_COLUMNS` sits in a table's header, and how many cells a row of that
+ *  table has. Upstream inserts columns between ours (`US data residency` arrived between
+ *  `Output` and `Notes`), so positions are read from the header rather than assumed. */
+type ModelTableLayout = {
+  readonly width: number
+  readonly positions: readonly number[]
+}
+
 function splitCells(line: string): string[] {
   const parts = line.split('|')
   return parts.slice(1, -1).map((cell) => cell.trim())
 }
 
-/** The seven columns must appear in order, one per cell. This — not a row count — is what
- *  keeps a foreign table out of the parse: the Plans table on the same page is
- *  `Plan | Price | Cursor Models | Other Models` and cannot match. */
-function isModelTableHeader(line: string): boolean {
+/** The seven columns must appear in order; extra columns around them are tolerated. This —
+ *  not a row count — is what keeps a foreign table out of the parse: the Plans table on the
+ *  same page is `Plan | Price | Included usage | Third-party models` and cannot match. */
+function readModelTableLayout(line: string): ModelTableLayout | null {
   if (!line.startsWith('|')) {
-    return false
+    return null
   }
 
   const cells = splitCells(line)
-  return (
-    cells.length === HEADER_COLUMNS.length &&
-    HEADER_COLUMNS.every((column, index) => cells[index] === column)
-  )
+  const positions: number[] = []
+  let searchFrom = 0
+  for (const column of HEADER_COLUMNS) {
+    const position = cells.indexOf(column, searchFrom)
+    if (position === -1) {
+      return null
+    }
+    positions.push(position)
+    searchFrom = position + 1
+  }
+
+  return { width: cells.length, positions }
 }
 
 function isSeparatorRow(line: string): boolean {
@@ -78,13 +94,15 @@ function parsePrice(cell: string): number | null {
   return Number.isFinite(value) ? value : null
 }
 
-function parseDataRow(line: string): CursorCatalogueRow | null {
+function parseDataRow(line: string, layout: ModelTableLayout): CursorCatalogueRow | null {
   const cells = splitCells(line)
-  if (cells.length !== 7 || isSeparatorRow(line)) {
+  if (cells.length !== layout.width || isSeparatorRow(line)) {
     return null
   }
 
-  const [model, provider, input, cacheWrite, cacheRead, output, notes] = cells
+  const [model, provider, input, cacheWrite, cacheRead, output, notes] = layout.positions.map(
+    (position) => cells[position],
+  )
   if (!model || !provider || notes === undefined) {
     return null
   }
@@ -102,8 +120,8 @@ function parseDataRow(line: string): CursorCatalogueRow | null {
 
 /** PURE. No network, no fs.
  *
- *  Cursor publishes its catalogue across two seven-column tables (the "Cursor Models" pool
- *  and "Model pricing"); both are parsed and the union is deduplicated by name.
+ *  Cursor publishes its catalogue across two tables (the "Cursor Models" pool and "Model
+ *  pricing"); both are parsed and the union is deduplicated by name.
  *
  *  There is deliberately NO expected-row-count check. Models appearing and disappearing is
  *  normal upstream behaviour, absorbed downstream by `resolve.ts`. `minRows` is a truncation
@@ -115,7 +133,8 @@ export function parseCursorMarkdown(markdown: string, minRows = 20): readonly Cu
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]
-    if (!line || !isModelTableHeader(line)) {
+    const layout = line ? readModelTableLayout(line) : null
+    if (!layout) {
       continue
     }
 
@@ -135,7 +154,7 @@ export function parseCursorMarkdown(markdown: string, minRows = 20): readonly Cu
         break
       }
 
-      const row = parseDataRow(rowLine)
+      const row = parseDataRow(rowLine, layout)
       if (row) {
         rows.push(row)
       }
