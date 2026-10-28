@@ -13,6 +13,7 @@ export const previousSnapshotSchema = z.object({
     }),
   ),
   cursorTokenRate: z.object({ usdPerMillionTokens: z.number() }).optional(),
+  source: z.object({ aaIndexVersion: z.number() }).optional(),
 })
 /** What the diff needs from the previous run. A full `Snapshot` satisfies it. */
 export type PreviousSnapshot = z.infer<typeof previousSnapshotSchema>
@@ -40,6 +41,44 @@ export type SnapshotChanges = {
   readonly nowEligible: readonly string[]
   /** Models that stopped paying it. */
   readonly nowExempt: readonly string[]
+}
+
+/** A drop in matched models larger than this share of the previous count is flagged. */
+export const RESOLVED_DROP_WARNING_SHARE = 0.3
+
+/** Upstream shifts that silently degrade the snapshot rather than break the run. */
+export type ScoreRegressions = {
+  /** Artificial Analysis moved to a new index version; scores across versions do not compare. */
+  readonly indexVersion: ValueChange | null
+  /** Matched models fell by more than `RESOLVED_DROP_WARNING_SHARE`. */
+  readonly resolved: ValueChange | null
+}
+
+/** PURE. The run still writes its snapshot — these are for the operator to notice, because
+ *  an index change once took matched models from 57 to 13 with nothing failing. */
+export function detectScoreRegressions(
+  previous: PreviousSnapshot | null,
+  next: Pick<Snapshot, 'source' | 'coverage'>,
+): ScoreRegressions {
+  if (previous === null) {
+    return { indexVersion: null, resolved: null }
+  }
+
+  const priorVersion = previous.source?.aaIndexVersion
+  const nextVersion = next.source.aaIndexVersion
+  const indexVersion =
+    priorVersion !== undefined && priorVersion !== nextVersion
+      ? { from: priorVersion, to: nextVersion }
+      : null
+
+  const priorResolved = previous.models.filter((row) => row.aaSlug !== null).length
+  const nextResolved = next.coverage.resolved
+  const resolved =
+    nextResolved < priorResolved * (1 - RESOLVED_DROP_WARNING_SHARE)
+      ? { from: priorResolved, to: nextResolved }
+      : null
+
+  return { indexVersion, resolved }
 }
 
 export function hasChanges(changes: SnapshotChanges): boolean {

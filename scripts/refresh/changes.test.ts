@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest'
 import type { ModelRow, Snapshot } from '@schema/snapshot'
-import { diffSnapshots, hasChanges, previousSnapshotSchema } from './changes'
+import {
+  detectScoreRegressions,
+  diffSnapshots,
+  hasChanges,
+  previousSnapshotSchema,
+} from './changes'
 
 function row(overrides: Partial<ModelRow> & Pick<ModelRow, 'cursorName'>): ModelRow {
   return {
@@ -164,5 +169,58 @@ describe('diffSnapshots', () => {
     expect(changes.tokenRate).toBeNull()
     expect(changes.nowEligible).toEqual([])
     expect(changes.nowExempt).toEqual([])
+  })
+})
+
+describe('detectScoreRegressions', () => {
+  const resolvedRows = (count: number) =>
+    Array.from({ length: count }, (_, index) => row({ cursorName: `M${String(index)}` }))
+  const withAaVersion = (snap: Snapshot, aaIndexVersion: number): Snapshot => ({
+    ...snap,
+    source: { ...snap.source, aaIndexVersion },
+  })
+
+  test('1 — a first run has nothing to regress from', () => {
+    expect(detectScoreRegressions(null, snapshot(resolvedRows(3)))).toEqual({
+      indexVersion: null,
+      resolved: null,
+    })
+  })
+
+  test('2 — a new Artificial Analysis index version is flagged with both versions', () => {
+    const models = resolvedRows(3)
+
+    const regressions = detectScoreRegressions(
+      withAaVersion(snapshot(models), 4.3),
+      withAaVersion(snapshot(models), 5),
+    )
+
+    expect(regressions.indexVersion).toEqual({ from: 4.3, to: 5 })
+    expect(regressions.resolved).toBeNull()
+  })
+
+  test('3 — matched models falling by more than 30% is flagged; a smaller dip is not', () => {
+    const previous = snapshot(resolvedRows(10))
+
+    expect(detectScoreRegressions(previous, snapshot(resolvedRows(6))).resolved).toEqual({
+      from: 10,
+      to: 6,
+    })
+    expect(detectScoreRegressions(previous, snapshot(resolvedRows(7))).resolved).toBeNull()
+  })
+
+  test('4 — a version 1 previous file without a source block still counts its matches', () => {
+    const previous = previousSnapshotSchema.parse({
+      models: [
+        { cursorName: 'A', aaSlug: 'a' },
+        { cursorName: 'B', aaSlug: 'b' },
+        { cursorName: 'C', aaSlug: null },
+      ],
+    })
+
+    const regressions = detectScoreRegressions(previous, snapshot([row({ cursorName: 'A' })]))
+
+    expect(regressions.indexVersion).toBeNull()
+    expect(regressions.resolved).toEqual({ from: 2, to: 1 })
   })
 })

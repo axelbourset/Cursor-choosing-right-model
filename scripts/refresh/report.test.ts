@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import type { ModelRow, Snapshot } from '@schema/snapshot'
 import { computeCoverage } from '@domain/coverage'
 import type { SnapshotChanges } from './changes'
-import { buildChangeReport, buildReport } from './report'
+import { buildChangeReport, buildReport, buildWarnings } from './report'
 
 const NO_CHANGES: SnapshotChanges = {
   added: [],
@@ -247,5 +247,22 @@ describe('buildChangeReport', () => {
     expect(lines).toMatch(/~ Cursor Token Rate: \$0\.25 -> \$0\.3 per 1M tokens/)
     expect(lines).toMatch(/~ Pays: now pays the Cursor Token Rate/)
     expect(lines).toMatch(/~ Free: now exempt from the Cursor Token Rate/)
+  })
+})
+
+describe('buildWarnings', () => {
+  test('1 — no regressions, no lines', () => {
+    expect(buildWarnings({ indexVersion: null, resolved: null })).toEqual([])
+  })
+
+  test('2 — an index version change and a coverage drop each get a WARNING line', () => {
+    const lines = buildWarnings({
+      indexVersion: { from: 4.3, to: 5 },
+      resolved: { from: 57, to: 13 },
+    })
+
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toMatch(/^WARNING: Artificial Analysis index version changed 4\.3 -> 5\./)
+    expect(lines[1]).toMatch(/^WARNING: matched models fell from 57 to 13 \(-77%\)/)
   })
 })

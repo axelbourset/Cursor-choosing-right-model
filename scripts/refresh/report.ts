@@ -1,5 +1,5 @@
 import type { Snapshot } from '@schema/snapshot'
-import { hasChanges, type SnapshotChanges } from './changes'
+import { hasChanges, type ScoreRegressions, type SnapshotChanges } from './changes'
 import { CURSOR_FIRST_PARTY_PROVIDER, unmatchedExclusions } from './cursorTokenRate'
 import { SNAPSHOT_PATH } from './writeSnapshot'
 
@@ -105,6 +105,29 @@ export function buildChangeReport(
 
   for (const name of unusedOverrides) {
     lines.push(`Unused override: ${name} is not in Cursor's catalogue — safe to delete.`)
+  }
+
+  return lines
+}
+
+/** Returns warning lines for upstream shifts that degrade the snapshot without failing the
+ *  run, or [] when there are none. Pure. */
+export function buildWarnings(regressions: ScoreRegressions): readonly string[] {
+  const lines: string[] = []
+
+  if (regressions.indexVersion) {
+    const { from, to } = regressions.indexVersion
+    lines.push(
+      `WARNING: Artificial Analysis index version changed ${from} -> ${to}. Scores from different index versions are not comparable, and models AA has not re-benchmarked may have lost theirs.`,
+    )
+  }
+
+  if (regressions.resolved) {
+    const { from, to } = regressions.resolved
+    const drop = Math.round(((from - to) / from) * 100)
+    lines.push(
+      `WARNING: matched models fell from ${from} to ${to} (-${drop}%) since the previous snapshot. Check the unmatched list above before using this snapshot.`,
+    )
   }
 
   return lines

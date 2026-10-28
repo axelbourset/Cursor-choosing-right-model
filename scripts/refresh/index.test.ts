@@ -415,6 +415,38 @@ describe('runRefresh', () => {
     }
   })
 
+  test('14b — an index version change and a collapse in matches warn, and still write', async () => {
+    const { deps, calls } = createFixtureDeps({
+      previousSnapshot: {
+        source: { aaIndexVersion: 3 },
+        models: Array.from({ length: 200 }, (_, index) => ({
+          cursorName: `Old ${String(index)}`,
+          aaSlug: `old-${String(index)}`,
+        })),
+      },
+    })
+
+    const result = await runRefresh(deps, 'fixture')
+
+    expect(result.kind).toBe('ok')
+    expect(calls.writeFile).toHaveLength(1)
+    if (result.kind === 'ok') {
+      const warnings = result.warningLines.join('\n')
+      expect(warnings).toMatch(/index version changed 3 ->/)
+      expect(warnings).toMatch(/matched models fell from 200 to/)
+    }
+  })
+
+  test('14c — an unchanged run has no warnings', async () => {
+    const { deps: firstDeps, calls: firstCalls } = createFixtureDeps()
+    await runRefresh(firstDeps, 'fixture')
+    const previousSnapshot = snapshotSchema.parse(JSON.parse(firstCalls.writeFile[0]!.data))
+
+    const result = await runRefresh(createFixtureDeps({ previousSnapshot }).deps, 'fixture')
+
+    expect(result.kind === 'ok' && result.warningLines).toEqual([])
+  })
+
   test('15 — an override for a model Cursor does not publish is reported, not fatal', async () => {
     const { deps } = createFixtureDeps({
       overrides: new Map([['Not A Real Model', { aaSlug: null, reason: 'stale entry' }]]),

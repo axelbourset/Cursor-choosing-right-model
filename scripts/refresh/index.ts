@@ -3,7 +3,12 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { computeCoverage } from '@domain/coverage'
 import { API_KEY_PLACEHOLDER, CURRENT_SCHEMA_VERSION, type Snapshot } from '@schema/snapshot'
-import { diffSnapshots, previousSnapshotSchema, type PreviousSnapshot } from './changes'
+import {
+  detectScoreRegressions,
+  diffSnapshots,
+  previousSnapshotSchema,
+  type PreviousSnapshot,
+} from './changes'
 import { parseCursorTokenRate } from './cursorTokenRate'
 import { fetchArtificialAnalysis } from './fetchArtificialAnalysis'
 import { fetchCursorMarkdown } from './fetchCursorMarkdown'
@@ -13,7 +18,7 @@ import { loadRepoEnv } from './loadEnv'
 import { joinModels } from './join'
 import { parseOverrides, OVERRIDES_PATH, type Overrides } from './overrides'
 import { parseCursorMarkdown } from './parseCursorMarkdown'
-import { buildChangeReport, buildReport } from './report'
+import { buildChangeReport, buildReport, buildWarnings } from './report'
 import { resolveDeclarations } from './resolve'
 import type { Transport } from './transport'
 import { writeSnapshot, SNAPSHOT_PATH, type SnapshotFileWriter } from './writeSnapshot'
@@ -52,6 +57,8 @@ export type RefreshOutcome =
       readonly lines: readonly string[]
       /** What moved since the previous run. Informational; never affects the exit code. */
       readonly changeLines: readonly string[]
+      /** Upstream shifts that degraded the snapshot. Loud, but never affect the exit code. */
+      readonly warningLines: readonly string[]
     }
   | { readonly kind: 'error'; readonly message: string }
 
@@ -97,6 +104,7 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
       kind: 'ok',
       lines,
       changeLines: buildChangeReport(changes, resolved.unusedOverrides),
+      warningLines: buildWarnings(detectScoreRegressions(previousSnapshot, snapshot)),
     }
   } catch (error) {
     // Not JSON.stringify: it returns undefined for a function or symbol and throws on a
@@ -192,6 +200,11 @@ async function main(): Promise<void> {
 
   for (const line of result.changeLines) {
     console.log(line)
+  }
+
+  // Last and on stderr, so they are the final thing on screen.
+  for (const line of result.warningLines) {
+    console.warn(line)
   }
 }
 
