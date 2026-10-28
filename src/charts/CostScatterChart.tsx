@@ -87,7 +87,7 @@ export function CostScatterChart({
   ])
 
   // Init and dispose exactly once. This used to live in the same effect as setOption, with
-  // a freshly-built `option` in its dep array, so every toolbar change tore the chart down
+  // a freshly-built `option` in its dep array, so every settings change tore the chart down
   // and rebuilt it — discarding animation, hover and tooltip state.
   useEffect(() => {
     const element = chartRef.current
@@ -98,13 +98,16 @@ export function CostScatterChart({
     const chart = echarts.init(element)
     chartInstance.current = chart
 
-    const handleResize = () => {
+    // Watches the chart's own box rather than the window: its height follows the settings
+    // column beside it, which can change with no window resize (a late web font re-wrapping
+    // a label), and a canvas sized once would then leave a gap or overflow the card.
+    const observer = new ResizeObserver(() => {
       chart.resize()
-    }
-    window.addEventListener('resize', handleResize)
+    })
+    observer.observe(element)
 
     return () => {
-      window.removeEventListener('resize', handleResize)
+      observer.disconnect()
       chart.dispose()
       chartInstance.current = null
     }
@@ -116,133 +119,171 @@ export function CostScatterChart({
 
   return (
     <section className="panel">
-      <div className="panel__toolbar">
-        <div className="toolbar-field">
-          <label htmlFor="scatter-cost-axis">X axis</label>
-          <select
-            id="scatter-cost-axis"
-            className="toolbar-select"
-            value={costAxis}
-            onChange={(event) => {
-              const value = event.target.value
-              if (isCostAxisKey(value)) {
-                onCostAxisChange(value)
-              }
-            }}
-          >
-            {COST_AXIS_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {COST_AXIS_LABELS[key]}
-              </option>
-            ))}
-          </select>
-          <CostAxisHelp />
-          <label
-            className="check"
-            title={`Adds Cursor's $${String(cursorTokenRate)} per 1M tokens surcharge to every price of eligible third-party models, as billed on Teams and Enterprise plans. Untick for an individual plan.`}
-          >
-            <input
-              type="checkbox"
-              checked={includeCursorTokenRate}
-              onChange={(event) => {
-                onCursorTokenRateChange(event.target.checked)
-              }}
-            />
-            Cursor Token Rate (Teams/Enterprise)
-          </label>
+      <div className="panel__main">
+        <div className="panel__status" role="status">
+          <CoverageNote shown={selection.shown} total={selection.total} />
+          <p className="panel__legend" data-testid="frontier-legend">
+            {selection.pareto.frontier.length}{' '}
+            {selection.pareto.frontier.length === 1 ? 'Pareto model' : 'Pareto models'}
+            {filters.paretoOnly ? ' · chart and table show Pareto only' : ''}
+          </p>
         </div>
+        <div className="panel__chart" ref={chartRef} data-testid="cost-scatter-chart" />
+      </div>
 
-        <div className="toolbar-field" role="radiogroup" aria-label="Scatter Y axis metric">
-          <span>Y axis</span>
-          <div className="segmented__track">
-            {METRIC_KEYS.map((key) => (
-              <label className="segmented__option" key={key}>
+      <aside className="chart-controls" aria-label="Chart settings">
+        <fieldset className="chart-controls__group">
+          <legend className="chart-controls__legend">Axes</legend>
+          <div className="chart-controls__body">
+            <div className="control" role="radiogroup" aria-label="Scatter Y axis metric">
+              <span className="control__label">Y axis</span>
+              <div className="segmented__track">
+                {METRIC_KEYS.map((key) => (
+                  <label className="segmented__option" key={key}>
+                    <input
+                      type="radio"
+                      name="scatter-metric"
+                      checked={metric === key}
+                      onChange={() => {
+                        onMetricChange(key)
+                      }}
+                    />
+                    {METRIC_LABELS[key]}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="control">
+              <label className="control__label" htmlFor="scatter-cost-axis">
+                X axis
+              </label>
+              <div className="control__row">
+                <select
+                  id="scatter-cost-axis"
+                  className="toolbar-select"
+                  value={costAxis}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    if (isCostAxisKey(value)) {
+                      onCostAxisChange(value)
+                    }
+                  }}
+                >
+                  {COST_AXIS_KEYS.map((key) => (
+                    <option key={key} value={key}>
+                      {COST_AXIS_LABELS[key]}
+                    </option>
+                  ))}
+                </select>
+                <CostAxisHelp />
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset className="chart-controls__group">
+          <legend className="chart-controls__legend">Pricing</legend>
+          <div className="chart-controls__body">
+            <div className="control">
+              <label className="check">
                 <input
-                  type="radio"
-                  name="scatter-metric"
-                  checked={metric === key}
-                  onChange={() => {
-                    onMetricChange(key)
+                  type="checkbox"
+                  aria-describedby="token-rate-hint"
+                  checked={includeCursorTokenRate}
+                  onChange={(event) => {
+                    onCursorTokenRateChange(event.target.checked)
                   }}
                 />
-                {METRIC_LABELS[key]}
+                Cursor Token Rate (Teams/Enterprise)
               </label>
-            ))}
+              <p className="control__hint" id="token-rate-hint">
+                Adds ${String(cursorTokenRate)} per 1M tokens to every price of eligible third-party
+                models. Untick on an individual plan.
+              </p>
+            </div>
           </div>
-        </div>
+        </fieldset>
 
-        <label className="toolbar-field">
-          Provider
-          <select
-            className="toolbar-select"
-            aria-label="Provider"
-            value={filters.provider ?? ''}
-            onChange={(event) => {
-              const value = event.target.value
-              onFiltersChange({ ...filters, provider: value === '' ? null : value })
-            }}
-          >
-            <option value="">All providers</option>
-            {providers.map((provider) => (
-              <option key={provider} value={provider}>
-                {provider}
-              </option>
-            ))}
-          </select>
-        </label>
+        <fieldset className="chart-controls__group">
+          <legend className="chart-controls__legend">Filter</legend>
+          <div className="chart-controls__body">
+            <div className="control">
+              <label className="control__label" htmlFor="scatter-provider">
+                Provider
+              </label>
+              <select
+                id="scatter-provider"
+                className="toolbar-select"
+                value={filters.provider ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value
+                  onFiltersChange({ ...filters, provider: value === '' ? null : value })
+                }}
+              >
+                <option value="">All providers</option>
+                {providers.map((provider) => (
+                  <option key={provider} value={provider}>
+                    {provider}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div className="toolbar-field">
-          <label
-            className="check"
-            title="Show only Pareto models for the selected metric — best score for each price tier, and no model beats them on both price and score."
-          >
-            <input
-              type="checkbox"
-              aria-label="Only Pareto models"
-              checked={filters.paretoOnly}
-              onChange={(event) => {
-                onFiltersChange({ ...filters, paretoOnly: event.target.checked })
-              }}
-            />
-            Only Pareto models
-          </label>
+            <div className="control">
+              <label className="check">
+                <input
+                  type="checkbox"
+                  aria-label="Only Pareto models"
+                  aria-describedby="pareto-only-hint"
+                  checked={filters.paretoOnly}
+                  onChange={(event) => {
+                    onFiltersChange({ ...filters, paretoOnly: event.target.checked })
+                  }}
+                />
+                Only Pareto models
+              </label>
+              <p className="control__hint" id="pareto-only-hint">
+                No other model is both cheaper and better on the selected metric.
+              </p>
+            </div>
 
-          <label
-            className="check"
-            title="Show only models Cursor does not charge its Token Rate on: its own models (Grok, Composer) and the models on its published exclusion list. The Pareto set is recomputed among them."
-          >
-            <input
-              type="checkbox"
-              aria-label="Only rate-exempt models"
-              checked={filters.tokenRateExemptOnly}
-              onChange={(event) => {
-                onFiltersChange({ ...filters, tokenRateExemptOnly: event.target.checked })
-              }}
-            />
-            Only rate-exempt models
-          </label>
+            <div className="control">
+              <label className="check">
+                <input
+                  type="checkbox"
+                  aria-label="Only rate-exempt models"
+                  aria-describedby="rate-exempt-hint"
+                  checked={filters.tokenRateExemptOnly}
+                  onChange={(event) => {
+                    onFiltersChange({ ...filters, tokenRateExemptOnly: event.target.checked })
+                  }}
+                />
+                Only rate-exempt models
+              </label>
+              <p className="control__hint" id="rate-exempt-hint">
+                Cursor&apos;s own models (Grok, Composer) and its published exclusion list.
+              </p>
+            </div>
+          </div>
+        </fieldset>
 
-          <label className="check" title="Draw a line connecting the Pareto points on the chart.">
-            <input
-              type="checkbox"
-              checked={showFrontier}
-              onChange={(event) => {
-                onFrontierChange(event.target.checked)
-              }}
-            />
-            Draw Pareto line
-          </label>
-        </div>
-      </div>
-      <div className="panel__status">
-        <CoverageNote shown={selection.shown} total={selection.total} />
-        <p className="panel__legend" data-testid="frontier-legend">
-          {selection.pareto.frontier.length}{' '}
-          {selection.pareto.frontier.length === 1 ? 'Pareto model' : 'Pareto models'}
-          {filters.paretoOnly ? ' · chart and table show Pareto only' : ''}
-        </p>
-      </div>
-      <div className="panel__chart" ref={chartRef} data-testid="cost-scatter-chart" />
+        <fieldset className="chart-controls__group">
+          <legend className="chart-controls__legend">Display</legend>
+          <div className="chart-controls__body">
+            <label className="check" title="Draw a line connecting the Pareto points on the chart.">
+              <input
+                type="checkbox"
+                checked={showFrontier}
+                onChange={(event) => {
+                  onFrontierChange(event.target.checked)
+                }}
+              />
+              Draw Pareto line
+            </label>
+          </div>
+        </fieldset>
+      </aside>
     </section>
   )
 }

@@ -19,6 +19,16 @@ vi.mock('echarts', () => ({
   })),
 }))
 
+// jsdom has no ResizeObserver; the chart only needs one to exist.
+vi.stubGlobal(
+  'ResizeObserver',
+  class {
+    readonly observe = vi.fn()
+    readonly unobserve = vi.fn()
+    readonly disconnect = vi.fn()
+  },
+)
+
 import { App } from './App'
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {

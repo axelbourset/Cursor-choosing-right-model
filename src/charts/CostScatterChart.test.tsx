@@ -15,6 +15,18 @@ vi.mock('echarts', () => ({
   })),
 }))
 
+// jsdom has no ResizeObserver. The fake keeps every observer so a test can fire one.
+class FakeResizeObserver {
+  static instances: FakeResizeObserver[] = []
+  readonly disconnect = vi.fn()
+  constructor(readonly callback: ResizeObserverCallback) {
+    FakeResizeObserver.instances.push(this)
+  }
+  readonly observe = vi.fn()
+  readonly unobserve = vi.fn()
+}
+vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
     cursorName: 'Test Model',
@@ -443,5 +455,37 @@ describe('CostScatterChart', () => {
     fireEvent.click(checkbox)
 
     expect(onFiltersChange).toHaveBeenCalledWith({ ...filters, tokenRateExemptOnly: true })
+  })
+
+  test('19 — the chart resizes when its own box does, and stops watching on unmount', () => {
+    FakeResizeObserver.instances = []
+    const { unmount } = render(
+      <CostScatterChart
+        rows={[makeRow()]}
+        filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
+        metric="intelligence"
+        costAxis="input"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
+        onFrontierChange={vi.fn()}
+        includeCursorTokenRate={true}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
+      />,
+    )
+    const chart = vi.mocked(echarts.init).mock.results.at(-1)?.value as { resize: () => void }
+    const [observer] = FakeResizeObserver.instances
+    if (!observer) {
+      throw new Error('no ResizeObserver was created')
+    }
+
+    observer.callback([], observer)
+    expect(chart.resize).toHaveBeenCalledOnce()
+
+    unmount()
+    expect(observer.disconnect).toHaveBeenCalledOnce()
   })
 })

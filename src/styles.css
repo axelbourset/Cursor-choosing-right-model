@@ -230,36 +230,148 @@ a:hover {
 }
 
 /* ─── panels ─────────────────────────────────────────────────────────────── */
-/* Flat card: canvas fill, one white hairline. No gradient, no shadow. */
+/* Flat card: canvas fill, one white hairline. No gradient, no shadow.
+   The chart takes the wide column; its settings sit in a fixed-width column on
+   the right, so adding a setting grows the column instead of rewrapping a bar. */
 .panel {
+  --panel-pad: var(--sp-5);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18rem;
+  gap: var(--sp-5);
   margin-top: var(--sp-5);
-  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+  padding: var(--panel-pad);
   background: var(--canvas);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
 }
 
-/* One aligned toolbar row — X axis, Y axis segmented control, provider and the
-   pareto/frontier checks all share this bar. Labels are mono uppercase. */
-.panel__toolbar {
+.panel__main {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Grows to the settings column's height, never below 420px. */
+.panel__chart {
+  flex: 1;
+  width: 100%;
+  min-height: 420px;
+}
+
+/* ─── chart settings column ──────────────────────────────────────────────── */
+/* Pulled into the panel's padding so its divider runs edge to edge; the
+   padding puts the content back where it was. */
+.chart-controls {
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-4);
-  row-gap: var(--sp-3);
-  margin-bottom: var(--sp-4);
-  padding-bottom: var(--sp-3);
+  margin: calc(-1 * var(--panel-pad)) 0;
+  padding: var(--panel-pad) 0 var(--panel-pad) var(--sp-5);
+  border-left: 1px solid var(--frame);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-sm);
+}
+
+.chart-controls__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 var(--sp-4);
+  border: 0;
   border-bottom: 1px solid var(--frame);
-  color: var(--ink-meta);
+}
+
+.chart-controls__group:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* Section heading: mono caps, like every other label in the system. Padding,
+   not margin — a legend's margin does not reliably push the fieldset body. */
+.chart-controls__legend {
+  padding: 0 0 var(--sp-3);
+  color: var(--ink);
   font-family: var(--font-mono);
   font-size: var(--fs-label);
+  font-weight: 600;
   letter-spacing: 1.8px;
   text-transform: uppercase;
 }
 
-.panel__chart {
-  width: 100%;
-  height: 420px;
+.chart-controls__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* One setting: a small label above its input. */
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.control__label {
+  color: var(--ink-meta);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+
+.control__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.control__row .toolbar-select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Lines up under the checkbox label, past the box itself. */
+.control__hint {
+  margin: 0;
+  padding-left: calc(13px + var(--sp-2));
+  color: var(--ink-meta);
+  font-size: var(--fs-micro);
+  line-height: 1.45;
+}
+
+.chart-controls .segmented__track {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--frame);
+}
+
+.chart-controls .segmented__option {
+  justify-content: center;
+  padding: var(--sp-2) var(--sp-1);
+}
+
+.chart-controls .check {
+  align-items: flex-start;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+/* No UA margin, so the hint below can line up past the box. */
+.chart-controls .check input {
+  flex-shrink: 0;
+  margin: 0.2em 0 0;
+}
+
+/* The help popover opens leftwards over the chart: centred on an icon at the
+   column's right edge, it would run off the page. */
+.chart-controls .info-tip__popover {
+  left: auto;
+  right: 0;
+  transform: translateY(-4px);
+}
+
+.chart-controls .info-tip:hover .info-tip__popover,
+.chart-controls .info-tip:focus-within .info-tip__popover {
+  transform: translateY(0);
 }
 
 /* Status line: coverage count + frontier count, mono micro. */
@@ -268,7 +380,7 @@ a:hover {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-3);
-  margin: var(--sp-2) 0 0;
+  margin: 0 0 var(--sp-3);
   color: var(--ink-meta);
   font-family: var(--font-mono);
   font-size: var(--fs-micro);
@@ -311,13 +423,7 @@ a:hover {
   color: var(--ink);
 }
 
-/* ─── toolbar fields + segmented control ──────────────────────────────────── */
-.toolbar-field {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-}
-
+/* ─── selects + segmented control ────────────────────────────────────────── */
 /* Inputs: newspaper-tight 2px corners, hairline border, mint focus border. */
 .toolbar-select {
   min-height: 2rem;
@@ -344,7 +450,7 @@ a:hover {
 
 /* Segmented control (Y axis metric). Radios stay native and merely visually
    hidden (not display:none), so role="radio" queries and keyboard use are
-   unaffected. The active option carries the signature 1px mint inset
+   unaffected. The active option carries the signature 2px mint inset
    underline — never a filled pill. */
 .segmented__track {
   display: inline-flex;
@@ -896,6 +1002,24 @@ a:hover {
 }
 
 /* ─── responsive ─────────────────────────────────────────────────────────── */
+/* Too narrow for a side column: settings drop below the chart, behind a divider
+   that runs edge to edge. Groups are capped in width so selects do not stretch,
+   and so the right-anchored help popover still fits. */
+@media (max-width: 900px) {
+  .panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chart-controls {
+    margin: 0 calc(-1 * var(--panel-pad)) calc(-1 * var(--panel-pad));
+    padding: var(--sp-4) var(--panel-pad) var(--panel-pad);
+    border-left: 0;
+    border-top: 1px solid var(--frame);
+  }
+  .chart-controls__group {
+    max-width: 28rem;
+  }
+}
+
 @media (max-width: 640px) {
   .app-container {
     padding: var(--sp-4) var(--sp-3);
@@ -903,8 +1027,11 @@ a:hover {
   .site-header__actions {
     margin-left: 0;
   }
+  .panel {
+    --panel-pad: var(--sp-4);
+  }
   .panel__chart {
-    height: 320px;
+    min-height: 320px;
   }
   .table-wrapper {
     max-height: 24rem;
