@@ -334,6 +334,21 @@ describe('App', () => {
     expect(within(rowNamed('Free')).getByText('0.003')).toBeInTheDocument()
   })
 
+  test('21 — "Only rate-exempt models" limits the table to models without the surcharge', () => {
+    const models = [
+      makeRow({ cursorName: 'Paid', cursorSlug: 'paid', cursorTokenRateEligible: true }),
+      makeRow({ cursorName: 'Free', cursorSlug: 'free' }),
+    ]
+    mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
+    render(<App />)
+    expect(tbodyRows()).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Only rate-exempt models' }))
+
+    expect(tbodyRows()).toHaveLength(1)
+    expect(within(tbodyRows()[0]!).getByText('Free')).toBeInTheDocument()
+  })
+
   test('22 — the chart plots the same surcharged prices as the table', () => {
     const models = [
       makeRow({

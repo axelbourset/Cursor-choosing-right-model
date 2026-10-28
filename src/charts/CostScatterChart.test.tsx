@@ -416,4 +416,32 @@ describe('CostScatterChart', () => {
       cleanup()
     }
   })
+
+  test('18 — "Only rate-exempt models" reports a filter change and keeps the other filters', () => {
+    const onFiltersChange = vi.fn()
+    const filters = { ...DEFAULT_FILTERS, provider: 'Google' }
+    render(
+      <CostScatterChart
+        rows={[makeRow()]}
+        filters={filters}
+        providers={['Google']}
+        onFiltersChange={onFiltersChange}
+        metric="intelligence"
+        costAxis="cacheRead"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
+        onFrontierChange={vi.fn()}
+        includeCursorTokenRate={true}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
+      />,
+    )
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Only rate-exempt models' })
+    expect(checkbox).not.toBeChecked()
+    fireEvent.click(checkbox)
+
+    expect(onFiltersChange).toHaveBeenCalledWith({ ...filters, tokenRateExemptOnly: true })
+  })
 })

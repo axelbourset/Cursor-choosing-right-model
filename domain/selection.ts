@@ -10,11 +10,15 @@ function hasPlottableCost(row: ModelRow, costAxis: CostAxisKey): boolean {
 export type Filters = {
   readonly provider: string | null
   readonly paretoOnly: boolean
+  /** Keep only models Cursor does not charge its Token Rate on. Narrows the population like
+   *  `provider`, so the frontier is recomputed among exempt models rather than filtered. */
+  readonly tokenRateExemptOnly: boolean
 }
 
 export const DEFAULT_FILTERS: Filters = {
   provider: null,
   paretoOnly: false,
+  tokenRateExemptOnly: false,
 }
 
 export type Selection = {
@@ -33,6 +37,9 @@ export function applyFilters(rows: readonly ModelRow[], filters: Filters): reado
 
   for (const row of rows) {
     if (filters.provider !== null && row.provider !== filters.provider) {
+      continue
+    }
+    if (filters.tokenRateExemptOnly && row.cursorTokenRateEligible) {
       continue
     }
     result.push(row)

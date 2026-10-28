@@ -118,6 +118,7 @@ describe('selectForMetric', () => {
     expect(DEFAULT_FILTERS).toEqual({
       provider: null,
       paretoOnly: false,
+      tokenRateExemptOnly: false,
     })
   })
 
@@ -215,5 +216,31 @@ describe('selectPlottable', () => {
     const selection = selectPlottable(rows, 'intelligence', DEFAULT_FILTERS, 'cacheRead')
     expect(selection.plottable).toHaveLength(1)
     expect(selection.total).toBe(2)
+  })
+
+  test('5 — tokenRateExemptOnly keeps exempt models and recomputes the frontier among them', () => {
+    const rows = [
+      // The best model overall pays the rate, so it must not shadow the exempt ones.
+      makeRow({
+        cursorName: 'Paid',
+        intelligence: 90,
+        priceInput: 1,
+        cursorTokenRateEligible: true,
+      }),
+      makeRow({ cursorName: 'Cheap', intelligence: 50, priceInput: 2 }),
+      makeRow({ cursorName: 'Strong', intelligence: 70, priceInput: 3 }),
+      makeRow({ cursorName: 'Weak', intelligence: 40, priceInput: 4 }),
+    ]
+
+    const all = selectPlottable(rows, 'intelligence', DEFAULT_FILTERS)
+    const exempt = selectPlottable(rows, 'intelligence', {
+      ...DEFAULT_FILTERS,
+      tokenRateExemptOnly: true,
+    })
+
+    expect(all.pareto.frontier.map((row) => row.cursorName)).toEqual(['Paid'])
+    expect(exempt.filtered.map((row) => row.cursorName)).toEqual(['Cheap', 'Strong', 'Weak'])
+    expect(exempt.pareto.frontier.map((row) => row.cursorName)).toEqual(['Cheap', 'Strong'])
+    expect(exempt.total).toBe(3)
   })
 })

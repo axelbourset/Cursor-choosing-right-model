@@ -207,6 +207,21 @@ export function CostScatterChart({
             Only Pareto models
           </label>
 
+          <label
+            className="check"
+            title="Show only models Cursor does not charge its Token Rate on: its own models (Grok, Composer) and the models on its published exclusion list. The Pareto set is recomputed among them."
+          >
+            <input
+              type="checkbox"
+              aria-label="Only rate-exempt models"
+              checked={filters.tokenRateExemptOnly}
+              onChange={(event) => {
+                onFiltersChange({ ...filters, tokenRateExemptOnly: event.target.checked })
+              }}
+            />
+            Only rate-exempt models
+          </label>
+
           <label className="check" title="Draw a line connecting the Pareto points on the chart.">
             <input
               type="checkbox"
