@@ -45,3 +45,38 @@ export function toPricedRow(
   }
   return { row, score, cost }
 }
+
+/** Six decimal places: finer than any published price, coarse enough to absorb float noise.
+ *  Without it `0.032 + 0.25` would surface as `0.28200000000000003` in the table, and two
+ *  equal prices could differ in the last bit and break a tie in the frontier maths. */
+const PRICE_PRECISION = 1e6
+
+function addRate(price: number | null, usdPerMillionTokens: number): number | null {
+  return price === null
+    ? null
+    : Math.round((price + usdPerMillionTokens) * PRICE_PRECISION) / PRICE_PRECISION
+}
+
+/** Rows priced as a Teams or Enterprise plan pays: Cursor's flat Token Rate added to every
+ *  list price of every eligible model. The docs apply it to "input tokens, output tokens, and
+ *  cached tokens", so cache writes are included.
+ *
+ *  Applied once, before selection: the frontier, the chart and the table sort all read
+ *  prices off the rows, so none of them needs to know the rate exists. Exempt rows are
+ *  returned as the same object; missing prices stay missing. */
+export function withCursorTokenRate(
+  rows: readonly ModelRow[],
+  usdPerMillionTokens: number,
+): readonly ModelRow[] {
+  return rows.map((row) =>
+    row.cursorTokenRateEligible
+      ? {
+          ...row,
+          priceInput: addRate(row.priceInput, usdPerMillionTokens),
+          priceOutput: addRate(row.priceOutput, usdPerMillionTokens),
+          priceCacheRead: addRate(row.priceCacheRead, usdPerMillionTokens),
+          priceCacheWrite: addRate(row.priceCacheWrite, usdPerMillionTokens),
+        }
+      : row,
+  )
+}

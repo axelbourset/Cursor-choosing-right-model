@@ -6,6 +6,9 @@ import { useSortedRows } from './useSortedRows'
 
 type ModelTableProps = {
   readonly rows: readonly ModelRow[]
+  /** The Cursor Token Rate the rows' prices already include, or null for list prices.
+   *  Labels only: the rows arrive with the rate added. */
+  readonly cursorTokenRate?: number | null
 }
 
 function matchesSearch(row: ModelRow, query: string): boolean {
@@ -20,7 +23,7 @@ function matchesSearch(row: ModelRow, query: string): boolean {
   )
 }
 
-export function ModelTable({ rows }: ModelTableProps) {
+export function ModelTable({ rows, cursorTokenRate = null }: ModelTableProps) {
   const [search, setSearch] = useState('')
   const { sorted, toggle, sortKey, direction } = useSortedRows(rows)
   const visible = useMemo(
@@ -53,7 +56,16 @@ export function ModelTable({ rows }: ModelTableProps) {
       </div>
       <div className="table-wrapper">
         <table className="model-table" aria-label="Cursor models">
-          <caption className="model-table__caption">Cursor models</caption>
+          <caption className="model-table__caption">
+            Cursor models
+            {cursorTokenRate === null ? null : (
+              <span className="model-table__rate-note">
+                {' '}
+                · * Prices include the +${String(cursorTokenRate)} / 1M Cursor Token Rate on
+                eligible models; exempt models show their list price.
+              </span>
+            )}
+          </caption>
           <thead>
             <tr>
               {COLUMNS.map((column) => (
@@ -81,6 +93,9 @@ export function ModelTable({ rows }: ModelTableProps) {
                     }}
                   >
                     {column.label}
+                    {cursorTokenRate !== null && column.ratePriced ? (
+                      <span aria-hidden="true">*</span>
+                    ) : null}
                     {sortKey === column.key ? (
                       <span aria-hidden="true" className="model-table__sort-arrow">
                         {direction === 'asc' ? ' \u2191' : ' \u2193'}

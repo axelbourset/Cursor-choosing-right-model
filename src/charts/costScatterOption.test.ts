@@ -285,4 +285,34 @@ describe('buildCostScatterOption', () => {
     expect(formatter('nonsense')).toBe('')
     expect(formatter(null)).toBe('')
   })
+
+  test('15 — with the Cursor Token Rate applied, the axis title says so', () => {
+    const applied = buildCostScatterOption(pareto, 'intelligence', 'cacheRead', true, {
+      appliedTokenRate: 0.25,
+    })
+    const listed = buildCostScatterOption(pareto, 'intelligence', 'cacheRead', true)
+
+    expect((applied.xAxis as { name: string }).name).toBe(
+      'Price per 1M cache-read tokens incl. Cursor Token Rate (USD, log scale)',
+    )
+    expect((listed.xAxis as { name: string }).name).toBe(
+      'Price per 1M cache-read tokens (USD, log scale)',
+    )
+  })
+
+  test('16 — the tooltip says whether a model pays the rate, and only when it is applied', () => {
+    const tooltipFor = (row: ModelRow, appliedTokenRate: number | null) => {
+      const option = buildCostScatterOption(pareto, 'intelligence', 'input', true, {
+        appliedTokenRate,
+      })
+      const formatter = (option.tooltip as { formatter: (params: unknown) => string }).formatter
+      return formatter({ data: { row, value: [1, 50] } })
+    }
+    const eligible = makeRow({ cursorTokenRateEligible: true })
+    const exempt = makeRow({ cursorTokenRateEligible: false })
+
+    expect(tooltipFor(eligible, 0.25)).toContain('Includes the +$0.25 / 1M Cursor Token Rate')
+    expect(tooltipFor(exempt, 0.25)).toContain('Exempt from the Cursor Token Rate')
+    expect(tooltipFor(eligible, null)).not.toContain('Cursor Token Rate')
+  })
 })

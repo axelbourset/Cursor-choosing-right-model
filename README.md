@@ -26,4 +26,20 @@ The free tier allows 100 requests/day shared across an organisation; one refresh
 
 Offline without a key: `npm run refresh -- --fixture` (synthetic data).
 
+## Cursor Token Rate
+
+On Teams and Enterprise plans Cursor adds a flat
+[Cursor Token Rate](https://cursor.com/docs/models-and-pricing#cursor-token-rate) per 1M
+tokens to every price of eligible third-party models. Cursor's own models (Grok, Composer)
+and a published exclusion list are exempt. It barely moves output prices but can multiply
+cache-read prices several times over, which reorders the Pareto frontier.
+
+The refresh reads the rate and the exclusion list from the same Cursor pricing page as the
+model table, and records each model's eligibility in the snapshot. The **Cursor Token Rate
+(Teams/Enterprise)** checkbox next to the X axis, on by default, adds it to every price shown
+in the chart, tooltip and table. Untick it if you are on an individual plan.
+
+A snapshot written before this (schema version 1) is reported as stale: run
+`npm run refresh` again and drop the new `data/models.json`.
+
 Data: Artificial Analysis (artificialanalysis.ai)

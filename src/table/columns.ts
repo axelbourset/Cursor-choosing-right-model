@@ -14,6 +14,8 @@ export type Column = {
   readonly key: SortKey
   readonly label: string
   readonly numeric: boolean
+  /** A list price the Cursor Token Rate is added to, so its header is marked when it is. */
+  readonly ratePriced?: boolean
   readonly format: (row: ModelRow) => Cell
 }
 
@@ -67,18 +69,21 @@ export const COLUMNS: readonly Column[] = [
     key: 'priceInput',
     label: 'In $',
     numeric: true,
+    ratePriced: true,
     format: (row) => formatNullableNumber(row.priceInput),
   },
   {
     key: 'priceOutput',
     label: 'Out $',
     numeric: true,
+    ratePriced: true,
     format: (row) => formatNullableNumber(row.priceOutput),
   },
   {
     key: 'priceCacheRead',
     label: 'Cache R $',
     numeric: true,
+    ratePriced: true,
     format: (row) => formatNullableNumber(row.priceCacheRead),
   },
 ]

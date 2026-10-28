@@ -27,10 +27,15 @@ type CostScatterChartProps = {
   readonly metric: MetricKey
   readonly costAxis: CostAxisKey
   readonly showFrontier: boolean
+  /** Whether `rows` carry the Cursor Token Rate. App applies it; this only labels it. */
+  readonly includeCursorTokenRate: boolean
+  /** The rate in USD per 1M tokens, from the snapshot. */
+  readonly cursorTokenRate: number
   readonly onFiltersChange: (filters: Filters) => void
   readonly onMetricChange: (metric: MetricKey) => void
   readonly onCostAxisChange: (costAxis: CostAxisKey) => void
   readonly onFrontierChange: (show: boolean) => void
+  readonly onCursorTokenRateChange: (include: boolean) => void
 }
 
 function isCostAxisKey(value: string): value is CostAxisKey {
@@ -44,10 +49,13 @@ export function CostScatterChart({
   metric,
   costAxis,
   showFrontier,
+  includeCursorTokenRate,
+  cursorTokenRate,
   onFiltersChange,
   onMetricChange,
   onCostAxisChange,
   onFrontierChange,
+  onCursorTokenRateChange,
 }: CostScatterChartProps) {
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
@@ -65,8 +73,18 @@ export function CostScatterChart({
           excluded: selection.pareto.excluded,
         })
       : selection.pareto
-    return buildCostScatterOption(chartPareto, metric, costAxis, showFrontier)
-  }, [selection, filters.paretoOnly, metric, costAxis, showFrontier])
+    return buildCostScatterOption(chartPareto, metric, costAxis, showFrontier, {
+      appliedTokenRate: includeCursorTokenRate ? cursorTokenRate : null,
+    })
+  }, [
+    selection,
+    filters.paretoOnly,
+    metric,
+    costAxis,
+    showFrontier,
+    includeCursorTokenRate,
+    cursorTokenRate,
+  ])
 
   // Init and dispose exactly once. This used to live in the same effect as setOption, with
   // a freshly-built `option` in its dep array, so every toolbar change tore the chart down
@@ -119,6 +137,19 @@ export function CostScatterChart({
             ))}
           </select>
           <CostAxisHelp />
+          <label
+            className="check"
+            title={`Adds Cursor's $${String(cursorTokenRate)} per 1M tokens surcharge to every price of eligible third-party models, as billed on Teams and Enterprise plans. Untick for an individual plan.`}
+          >
+            <input
+              type="checkbox"
+              checked={includeCursorTokenRate}
+              onChange={(event) => {
+                onCursorTokenRateChange(event.target.checked)
+              }}
+            />
+            Cursor Token Rate (Teams/Enterprise)
+          </label>
         </div>
 
         <div className="toolbar-field" role="radiogroup" aria-label="Scatter Y axis metric">

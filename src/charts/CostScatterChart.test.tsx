@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import type { ModelRow } from '@schema/snapshot'
+import { COST_AXIS_KEYS, type ModelRow } from '@schema/snapshot'
 import { DEFAULT_FILTERS } from '@domain/selection'
 import * as echarts from 'echarts'
 import { CostScatterChart } from './CostScatterChart'
@@ -78,6 +78,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(screen.getByText('3/4 shown')).toBeInTheDocument()
@@ -102,6 +105,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(scatterXValues()).not.toContain(0)
@@ -145,6 +151,9 @@ describe('CostScatterChart', () => {
         onMetricChange={onMetricChange}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(frontierLegendCount()).toBe(3)
@@ -165,6 +174,9 @@ describe('CostScatterChart', () => {
         onMetricChange={onMetricChange}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(frontierLegendCount()).toBe(1)
@@ -183,6 +195,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(screen.getByRole('radio', { name: 'Intelligence' })).toBeInTheDocument()
@@ -203,6 +218,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     const checkbox = screen.getByRole('checkbox', { name: 'Draw Pareto line' })
@@ -228,6 +246,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(scatterXValues()).not.toContain(0)
@@ -247,6 +268,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     const select = screen.getByRole('combobox', { name: 'X axis' })
@@ -269,6 +293,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(screen.getByRole('button', { name: 'About cost axes' })).toBeInTheDocument()
@@ -293,6 +320,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={onCostAxisChange}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(scatterXValues()).toEqual(expect.arrayContaining([1.0, 2.0]))
@@ -315,6 +345,9 @@ describe('CostScatterChart', () => {
         onMetricChange={vi.fn()}
         onCostAxisChange={onCostAxisChange}
         onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={0.25}
+        onCursorTokenRateChange={vi.fn()}
       />,
     )
     expect(scatterXValues()).toEqual(expect.arrayContaining([10.0, 20.0]))
@@ -338,6 +371,9 @@ describe('CostScatterChart', () => {
       onMetricChange: vi.fn(),
       onCostAxisChange: vi.fn(),
       onFrontierChange: vi.fn(),
+      includeCursorTokenRate: false,
+      cursorTokenRate: 0.25,
+      onCursorTokenRateChange: vi.fn(),
     }
 
     const { rerender } = render(<CostScatterChart {...props} metric="intelligence" />)
@@ -348,5 +384,36 @@ describe('CostScatterChart', () => {
 
     expect(echarts.init).toHaveBeenCalledTimes(1)
     expect(setOption.mock.calls.length).toBeGreaterThan(afterMount)
+  })
+
+  test('17 — the Cursor Token Rate checkbox shows on every cost axis and reports toggles', () => {
+    for (const costAxis of COST_AXIS_KEYS) {
+      const onCursorTokenRateChange = vi.fn()
+      render(
+        <CostScatterChart
+          rows={[makeRow()]}
+          filters={DEFAULT_FILTERS}
+          providers={[]}
+          onFiltersChange={vi.fn()}
+          metric="intelligence"
+          costAxis={costAxis}
+          showFrontier={true}
+          onMetricChange={vi.fn()}
+          onCostAxisChange={vi.fn()}
+          onFrontierChange={vi.fn()}
+          includeCursorTokenRate={true}
+          cursorTokenRate={0.25}
+          onCursorTokenRateChange={onCursorTokenRateChange}
+        />,
+      )
+      const checkbox = screen.getByRole('checkbox', {
+        name: 'Cursor Token Rate (Teams/Enterprise)',
+      })
+
+      expect(checkbox).toBeChecked()
+      fireEvent.click(checkbox)
+      expect(onCursorTokenRateChange).toHaveBeenCalledWith(false)
+      cleanup()
+    }
   })
 })

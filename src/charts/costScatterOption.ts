@@ -11,9 +11,23 @@ const FRONTIER_SYMBOL_SIZE = 16
 const DOMINATED_SYMBOL_SIZE = 12
 
 const COST_AXIS_LABELS: Record<CostAxisKey, string> = {
-  input: 'Price per 1M input tokens (USD, log scale)',
-  output: 'Price per 1M output tokens (USD, log scale)',
-  cacheRead: 'Price per 1M cache-read tokens (USD, log scale)',
+  input: 'Price per 1M input tokens',
+  output: 'Price per 1M output tokens',
+  cacheRead: 'Price per 1M cache-read tokens',
+}
+
+function costAxisName(costAxis: CostAxisKey, appliedTokenRate: number | null): string {
+  const rate = appliedTokenRate === null ? '' : ' incl. Cursor Token Rate'
+  return `${COST_AXIS_LABELS[costAxis]}${rate} (USD, log scale)`
+}
+
+/** Optional inputs, as an object so a new one does not shift the positionals every call
+ *  site already passes. */
+export type CostScatterOptions = {
+  readonly theme?: ChartTheme
+  /** The Cursor Token Rate the rows' prices already include, or null for list prices. It
+   *  only labels the chart: the rows arrive with the rate added (`withCursorTokenRate`). */
+  readonly appliedTokenRate?: number | null
 }
 
 type ScatterPoint = {
@@ -54,6 +68,17 @@ function fmtScore(value: number | null): string {
  *  columns in the tooltip are genuinely nullable. */
 function fmtPrice(value: number | null): string {
   return value === null ? '—' : `$${String(value)}`
+}
+
+/** Says whether the prices above include the surcharge, so an exempt model's unchanged
+ *  price is not mistaken for the rate having been forgotten. Nothing when list prices show. */
+function tokenRateNote(row: ModelRow, appliedTokenRate: number | null): readonly string[] {
+  if (appliedTokenRate === null) {
+    return []
+  }
+  return row.cursorTokenRateEligible
+    ? [`Includes the +${fmtPrice(appliedTokenRate)} / 1M Cursor Token Rate`]
+    : ['Exempt from the Cursor Token Rate']
 }
 
 function isScatterPoint(value: unknown): value is ScatterPoint {
@@ -99,8 +124,10 @@ export function buildCostScatterOption(
   metric: MetricKey,
   costAxis: CostAxisKey,
   showFrontier: boolean,
-  theme: ChartTheme = CHART_THEME,
+  options: CostScatterOptions = {},
 ): EChartsOption {
+  const theme = options.theme ?? CHART_THEME
+  const appliedTokenRate = options.appliedTokenRate ?? null
   // Projected once, here, so a row missing either axis is dropped rather than asserted
   // away. Everything downstream works with numbers that are provably present.
   const plottable = [...pareto.frontier, ...pareto.dominated].flatMap((row) => {
@@ -189,6 +216,7 @@ export function buildCostScatterOption(
           `Input: <b>${fmtPrice(row.priceInput)}</b> / 1M tokens`,
           `Output: <b>${fmtPrice(row.priceOutput)}</b> / 1M tokens`,
           `Cache read: <b>${fmtPrice(row.priceCacheRead)}</b> / 1M tokens`,
+          ...tokenRateNote(row, appliedTokenRate),
           `Intelligence: <b>${fmtScore(row.intelligence)}</b> · Coding: <b>${fmtScore(row.coding)}</b> · Agentic: <b>${fmtScore(row.agentic)}</b>`,
         ].join('<br/>')
       },
@@ -203,7 +231,7 @@ export function buildCostScatterOption(
     },
     xAxis: {
       type: 'log',
-      name: COST_AXIS_LABELS[costAxis],
+      name: costAxisName(costAxis, appliedTokenRate),
       nameLocation: 'middle',
       nameGap: 28,
       nameTextStyle: { color: muted, fontFamily: theme.fontSans },

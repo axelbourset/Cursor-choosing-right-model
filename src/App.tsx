@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import './styles.css'
 import type { Snapshot } from '@schema/snapshot'
 import type { SnapshotSource } from './snapshot/loadSnapshot'
+import { withCursorTokenRate } from '@domain/price'
 import { selectPlottable } from '@domain/selection'
 import { CostScatterChart } from './charts/CostScatterChart'
 import { SnapshotDropZone } from './snapshot/SnapshotDropZone'
@@ -128,7 +129,19 @@ export function App() {
     snapshotHook.result.kind === 'ok' || snapshotHook.result.kind === 'unsaved'
       ? snapshotHook.result
       : null
-  const rows = okResult?.snapshot.models ?? []
+  const snapshot = okResult?.snapshot ?? null
+  // One adjusted array for the chart, the frontier and the table alike, so they cannot
+  // disagree. Memoised so the chart's own selection memo does not churn on every render.
+  const rows = useMemo(() => {
+    if (snapshot === null) {
+      return []
+    }
+    return state.includeCursorTokenRate
+      ? withCursorTokenRate(snapshot.models, snapshot.cursorTokenRate.usdPerMillionTokens)
+      : snapshot.models
+  }, [snapshot, state.includeCursorTokenRate])
+  const appliedTokenRate =
+    state.includeCursorTokenRate && snapshot ? snapshot.cursorTokenRate.usdPerMillionTokens : null
   const providers = [...new Set(rows.map((row) => row.provider))].sort()
 
   const selection = selectPlottable(rows, state.metric, state.filters, state.costAxis)
@@ -170,6 +183,8 @@ export function App() {
               metric={state.metric}
               costAxis={state.costAxis}
               showFrontier={state.showFrontier}
+              includeCursorTokenRate={state.includeCursorTokenRate}
+              cursorTokenRate={okResult.snapshot.cursorTokenRate.usdPerMillionTokens}
               onFiltersChange={(filters) => {
                 set({ filters })
               }}
@@ -182,9 +197,12 @@ export function App() {
               onFrontierChange={(showFrontier) => {
                 set({ showFrontier })
               }}
+              onCursorTokenRateChange={(includeCursorTokenRate) => {
+                set({ includeCursorTokenRate })
+              }}
             />
             <div className="table-section-outer">
-              <ModelTable rows={tableRows} />
+              <ModelTable rows={tableRows} cursorTokenRate={appliedTokenRate} />
             </div>
             <Footer />
           </>

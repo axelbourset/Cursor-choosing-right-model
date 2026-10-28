@@ -39,6 +39,11 @@ export function CostAxisHelp() {
             <dd>You run long sessions where the same context is re-read (agents, big repos).</dd>
           </div>
         </dl>
+        <p>
+          <strong>Cursor Token Rate:</strong> on Teams and Enterprise plans Cursor adds a flat
+          per-token surcharge to eligible third-party models, on every axis. Small prices move most
+          — a cache read can cost several times its list price. Untick it for an individual plan.
+        </p>
         <p className="info-tip__note">
           <strong>One month usage example:</strong> ~138M input · ~18M output · ~2.7B cache read
           tokens. Cache read dominated both volume and spend — try that axis if you&apos;re picking

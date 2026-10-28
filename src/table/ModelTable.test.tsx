@@ -300,4 +300,22 @@ describe('ModelTable', () => {
     expect(screen.getAllByRole('columnheader')[0]!).toHaveAttribute('aria-sort', 'ascending')
     expect(container).toBeTruthy()
   })
+
+  test('16 — with the Cursor Token Rate applied, price headers are marked and the caption explains', () => {
+    render(<ModelTable rows={[makeRow()]} cursorTokenRate={0.25} />)
+
+    const caption = screen.getByText(/Prices include the \+\$0\.25 \/ 1M Cursor Token Rate/)
+    expect(caption).toBeInTheDocument()
+    // The marker is decorative; the accessible header names do not change.
+    const priceHeader = screen.getByRole('button', { name: 'Cache R $' })
+    expect(priceHeader.textContent).toBe('Cache R $*')
+    expect(screen.getByRole('button', { name: 'Model' }).textContent).not.toContain('*')
+  })
+
+  test('17 — with list prices, there is no marker and no rate note', () => {
+    render(<ModelTable rows={[makeRow()]} cursorTokenRate={null} />)
+
+    expect(screen.queryByText(/Cursor Token Rate/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cache R $' }).textContent).toBe('Cache R $')
+  })
 })

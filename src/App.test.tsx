@@ -9,9 +9,11 @@ vi.mock('./snapshot/useSnapshot', () => ({
   useSnapshot: () => useSnapshotMock(),
 }))
 
+const setOption = vi.fn()
+
 vi.mock('echarts', () => ({
   init: vi.fn(() => ({
-    setOption: vi.fn(),
+    setOption,
     resize: vi.fn(),
     dispose: vi.fn(),
   })),
@@ -83,8 +85,20 @@ function tbodyRows(): HTMLTableRowElement[] {
   return tbody ? Array.from(tbody.querySelectorAll('tr')) : []
 }
 
+/** X values of every plotted point in the chart's latest render, ascending. */
+function plottedCosts(): number[] {
+  const option = setOption.mock.calls.at(-1)?.[0] as {
+    series: { type: string; data: { value: [number, number] }[] }[]
+  }
+  return option.series
+    .filter((s) => s.type === 'scatter')
+    .flatMap((s) => s.data.map((point) => point.value[0]))
+    .sort((a, b) => a - b)
+}
+
 beforeEach(() => {
   useSnapshotMock.mockReset()
+  setOption.mockClear()
 })
 
 afterEach(() => {
@@ -281,5 +295,62 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /clear data/i }))
     expect(clear).toHaveBeenCalledOnce()
+  })
+
+  test('20 — the Cursor Token Rate is on by default and priced into eligible rows only', () => {
+    const models = [
+      makeRow({
+        cursorName: 'Paid',
+        cursorSlug: 'paid',
+        priceInput: 2,
+        priceOutput: 10,
+        priceCacheRead: 0.1,
+        cursorTokenRateEligible: true,
+      }),
+      makeRow({ cursorName: 'Free', cursorSlug: 'free', priceCacheRead: 0.003 }),
+    ]
+    mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
+    render(<App />)
+
+    const rowNamed = (name: string) => {
+      const row = tbodyRows().find((tr) => within(tr).queryByText(name))
+      if (!row) {
+        throw new Error(`row not found: ${name}`)
+      }
+      return row
+    }
+    const checkbox = screen.getByRole('checkbox', { name: 'Cursor Token Rate (Teams/Enterprise)' })
+
+    expect(checkbox).toBeChecked()
+    expect(within(rowNamed('Paid')).getByText('0.35')).toBeInTheDocument()
+    expect(within(rowNamed('Paid')).getByText('2.25')).toBeInTheDocument()
+    expect(within(rowNamed('Free')).getByText('0.003')).toBeInTheDocument()
+
+    fireEvent.click(checkbox)
+
+    expect(checkbox).not.toBeChecked()
+    expect(within(rowNamed('Paid')).getByText('0.1')).toBeInTheDocument()
+    expect(within(rowNamed('Paid')).getByText('2')).toBeInTheDocument()
+    expect(within(rowNamed('Free')).getByText('0.003')).toBeInTheDocument()
+  })
+
+  test('22 — the chart plots the same surcharged prices as the table', () => {
+    const models = [
+      makeRow({
+        cursorName: 'Paid',
+        cursorSlug: 'paid',
+        priceInput: 2,
+        cursorTokenRateEligible: true,
+      }),
+      makeRow({ cursorName: 'Free', cursorSlug: 'free', priceInput: 3 }),
+    ]
+    mockSnapshotHook({ kind: 'ok', source: 'local', snapshot: makeSnapshot(models) })
+    render(<App />)
+
+    expect(plottedCosts()).toEqual([2.25, 3])
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Cursor Token Rate (Teams/Enterprise)' }))
+
+    expect(plottedCosts()).toEqual([2, 3])
   })
 })
