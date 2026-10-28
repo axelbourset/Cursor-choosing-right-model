@@ -286,6 +286,24 @@ describe('runRefresh', () => {
     }
   })
 
+  test('9b — the Cursor Token Rate is read from the same page and decides eligibility', async () => {
+    const { deps, calls } = createFixtureDeps()
+
+    const result = await runRefresh(deps, 'fixture')
+    expect(result.kind).toBe('ok')
+
+    const snapshot = snapshotSchema.parse(JSON.parse(calls.writeFile[0]!.data))
+    const eligibility = (name: string) =>
+      snapshot.models.find((row) => row.cursorName === name)?.cursorTokenRateEligible
+    expect(snapshot.cursorTokenRate.usdPerMillionTokens).toBe(0.25)
+    expect(eligibility('Claude 4.6 Sonnet')).toBe(true)
+    expect(eligibility('GPT-5.6 Luna')).toBe(false)
+    expect(eligibility('Grok 4.6')).toBe(false)
+    if (result.kind === 'ok') {
+      expect(result.lines.some((line) => line.startsWith('Token rate:'))).toBe(true)
+    }
+  })
+
   test('11 — a new upstream model needs no human action: it is resolved and included', async () => {
     const { writer, calls } = createFakeWriter()
     const base = fixtureTransport(readFixture)

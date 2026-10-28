@@ -1,7 +1,17 @@
 import { describe, expect, test, vi } from 'vitest'
 import type { ModelRow, Snapshot } from '@schema/snapshot'
 import { computeCoverage } from '@domain/coverage'
+import type { SnapshotChanges } from './changes'
 import { buildChangeReport, buildReport } from './report'
+
+const NO_CHANGES: SnapshotChanges = {
+  added: [],
+  removed: [],
+  remapped: [],
+  tokenRate: null,
+  nowEligible: [],
+  nowExempt: [],
+}
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
@@ -20,6 +30,7 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
     priceOutput: 0.02,
     priceCacheRead: 0.003,
     priceCacheWrite: 0.004,
+    cursorTokenRateEligible: false,
     ...overrides,
   }
 }
@@ -29,7 +40,7 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
   const coverage = computeCoverage(models)
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: {
       aaIndexVersion: 163,
@@ -37,6 +48,7 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     },
     coverage,
     unmatched: [],
+    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
     models,
     ...overrides,
   }
@@ -161,28 +173,45 @@ describe('buildReport', () => {
 
     logSpy.mockRestore()
   })
+
+  test('8 — the Cursor Token Rate line counts who pays it and lists unknown exclusions', () => {
+    const snapshot = makeSnapshot({
+      models: [
+        makeRow({ cursorSlug: 'sonnet', provider: 'Anthropic', cursorTokenRateEligible: true }),
+        makeRow({ cursorSlug: 'grok', provider: 'Cursor', cursorTokenRateEligible: false }),
+        makeRow({ cursorSlug: 'gpt-5-mini', provider: 'OpenAI', cursorTokenRateEligible: false }),
+      ],
+      cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['GPT-5 Mini', 'GPT-4o Mini'] },
+    })
+
+    const line = buildReport(snapshot, null).find((l) => l.startsWith('Token rate:'))
+
+    expect(line).toBe(
+      'Token rate:       $0.25 / 1M tokens · 1 eligible · 2 exempt (1 Cursor, 1 excluded) · 1 listed exclusions not in catalogue: GPT-4o Mini',
+    )
+  })
 })
 
 describe('buildChangeReport', () => {
   test('1 — a first run with nothing to compare produces no lines', () => {
-    expect(buildChangeReport({ added: [], removed: [], remapped: [] }, [])).toEqual([])
+    expect(buildChangeReport(NO_CHANGES, [])).toEqual([])
   })
 
   test('2 — an added model is listed', () => {
-    const lines = buildChangeReport({ added: ['Claude Fable 5.1'], removed: [], remapped: [] }, [])
+    const lines = buildChangeReport({ ...NO_CHANGES, added: ['Claude Fable 5.1'] }, [])
 
     expect(lines.join('\n')).toMatch(/\+ Claude Fable 5\.1/)
   })
 
   test('3 — a removed model says why it vanished', () => {
-    const lines = buildChangeReport({ added: [], removed: ['Retired'], remapped: [] }, [])
+    const lines = buildChangeReport({ ...NO_CHANGES, removed: ['Retired'] }, [])
 
     expect(lines.join('\n')).toMatch(/- Retired \(no longer published by Cursor\)/)
   })
 
   test('4 — a remapped model shows both slugs', () => {
     const lines = buildChangeReport(
-      { added: [], removed: [], remapped: [{ cursorName: 'X', from: 'old-slug', to: 'new-slug' }] },
+      { ...NO_CHANGES, remapped: [{ cursorName: 'X', from: 'old-slug', to: 'new-slug' }] },
       [],
     )
 
@@ -191,7 +220,7 @@ describe('buildChangeReport', () => {
 
   test('5 — a mapping that gained or lost an AA record reads clearly', () => {
     const lines = buildChangeReport(
-      { added: [], removed: [], remapped: [{ cursorName: 'X', from: null, to: 'now-scored' }] },
+      { ...NO_CHANGES, remapped: [{ cursorName: 'X', from: null, to: 'now-scored' }] },
       [],
     )
 
@@ -199,8 +228,24 @@ describe('buildChangeReport', () => {
   })
 
   test('6 — an override naming a model Cursor no longer publishes is flagged', () => {
-    const lines = buildChangeReport({ added: [], removed: [], remapped: [] }, ['Ghost Model'])
+    const lines = buildChangeReport(NO_CHANGES, ['Ghost Model'])
 
     expect(lines.join('\n')).toMatch(/Unused override: Ghost Model .* safe to delete/)
+  })
+
+  test('7 — a moved Cursor Token Rate and eligibility flips are listed', () => {
+    const lines = buildChangeReport(
+      {
+        ...NO_CHANGES,
+        tokenRate: { from: 0.25, to: 0.3 },
+        nowEligible: ['Pays'],
+        nowExempt: ['Free'],
+      },
+      [],
+    ).join('\n')
+
+    expect(lines).toMatch(/~ Cursor Token Rate: \$0\.25 -> \$0\.3 per 1M tokens/)
+    expect(lines).toMatch(/~ Pays: now pays the Cursor Token Rate/)
+    expect(lines).toMatch(/~ Free: now exempt from the Cursor Token Rate/)
   })
 })

@@ -62,7 +62,8 @@ function isSeparatorRow(line: string): boolean {
   return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell))
 }
 
-function stripModelLink(cell: string): string {
+/** `[Name](url)` -> `Name`; anything else unchanged. */
+export function stripModelLink(cell: string): string {
   const match = /^\[([^\]]+)\]\([^)]*\)$/.exec(cell)
   return match?.[1] ?? cell
 }

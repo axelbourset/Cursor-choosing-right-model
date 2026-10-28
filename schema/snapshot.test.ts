@@ -1,9 +1,15 @@
 import { describe, expect, test } from 'vitest'
-import { modelRowSchema, SNAPSHOT_DEV_URL, snapshotSchema, unmatchedEntrySchema } from './snapshot'
+import {
+  CURRENT_SCHEMA_VERSION,
+  modelRowSchema,
+  SNAPSHOT_DEV_URL,
+  snapshotSchema,
+  unmatchedEntrySchema,
+} from './snapshot'
 
 function validSnapshot() {
   return {
-    schemaVersion: 1 as const,
+    schemaVersion: 2 as const,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: {
       aaIndexVersion: 1,
@@ -20,6 +26,7 @@ function validSnapshot() {
       aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
+    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
     models: [
       {
         cursorName: 'Fixture Model',
@@ -37,6 +44,7 @@ function validSnapshot() {
         priceOutput: 0.02,
         priceCacheRead: 0.003,
         priceCacheWrite: 0.004,
+        cursorTokenRateEligible: false,
       },
     ],
   }
@@ -56,8 +64,13 @@ describe('snapshotSchema', () => {
     expect(snapshotSchema.safeParse(input).success).toBe(true)
   })
 
-  test('3 — schemaVersion: 2', () => {
-    const input = { ...validSnapshot(), schemaVersion: 2 }
+  test('3 — a future schemaVersion is invalid', () => {
+    const input = { ...validSnapshot(), schemaVersion: CURRENT_SCHEMA_VERSION + 1 }
+    expect(snapshotSchema.safeParse(input).success).toBe(false)
+  })
+
+  test('3b — schemaVersion 1, which predates the Cursor Token Rate, is invalid', () => {
+    const input = { ...validSnapshot(), schemaVersion: 1 }
     expect(snapshotSchema.safeParse(input).success).toBe(false)
   })
 
@@ -140,6 +153,7 @@ describe('modelRowSchema', () => {
       priceOutput: null,
       priceCacheRead: null,
       priceCacheWrite: null,
+      cursorTokenRateEligible: false,
     }
     expect(modelRowSchema.safeParse(row).success).toBe(true)
   })

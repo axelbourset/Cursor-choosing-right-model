@@ -32,6 +32,7 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
     priceOutput: 0.02,
     priceCacheRead: 0.003,
     priceCacheWrite: 0.004,
+    cursorTokenRateEligible: false,
     ...overrides,
   }
 }

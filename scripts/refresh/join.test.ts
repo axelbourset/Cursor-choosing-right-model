@@ -1,9 +1,16 @@
 import { describe, expect, test } from 'vitest'
+import type { CursorTokenRate } from '@schema/snapshot'
 import type { CursorModelDeclaration } from './declaration'
 import type { AaModel } from './fetchArtificialAnalysis'
 import type { CursorPrice } from './fetchCursorPricingJson'
 import { JoinError, joinModels } from './join'
 import type { CursorCatalogueRow } from './parseCursorMarkdown'
+
+/** Excludes nothing in any catalogue below, so every non-Cursor row is eligible. */
+const TOKEN_RATE: CursorTokenRate = {
+  usdPerMillionTokens: 0.25,
+  excludedModels: ['Not In Catalogue'],
+}
 
 function decl(
   overrides: Partial<CursorModelDeclaration> &
@@ -75,6 +82,7 @@ describe('joinModels', () => {
       catalogue: catalogueRows,
       pricing: pricingRows,
       aaModels,
+      cursorTokenRate: TOKEN_RATE,
     })
 
     expect(result.rows).toHaveLength(1)
@@ -114,6 +122,7 @@ describe('joinModels', () => {
       catalogue: catalogueRows,
       pricing: pricingRows,
       aaModels: [],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     expect(result.rows).toHaveLength(1)
@@ -143,6 +152,7 @@ describe('joinModels', () => {
           catalogue: catalogueRows,
           pricing: [],
           aaModels: [aaModel({ slug: 'fixture-aa' })],
+          cursorTokenRate: TOKEN_RATE,
         }),
       /Orphan Row/,
     )
@@ -158,6 +168,7 @@ describe('joinModels', () => {
           catalogue: [],
           pricing: [],
           aaModels: [aaModel({ slug: 'fixture-aa' })],
+          cursorTokenRate: TOKEN_RATE,
         }),
       /Missing Model/,
     )
@@ -175,6 +186,7 @@ describe('joinModels', () => {
           catalogue: [catalogue({ name: 'Model A' })],
           pricing: [pricing({ slug: 'model-a' })],
           aaModels: [aaModel({ slug: 'other-slug' })],
+          cursorTokenRate: TOKEN_RATE,
         }),
       /stale alias/,
     )
@@ -197,6 +209,7 @@ describe('joinModels', () => {
           catalogue: [catalogue({ name: 'Model A' })],
           pricing: [pricing({ slug: 'model-a' })],
           aaModels: [aaModel({ slug: 'nr-slug', name: 'Fixture Model 99 (Non-reasoning)' })],
+          cursorTokenRate: TOKEN_RATE,
         }),
       /non-reasoning/i,
     )
@@ -217,6 +230,7 @@ describe('joinModels', () => {
       catalogue: [catalogue({ name: 'Model A' })],
       pricing: [pricing({ slug: 'model-a' })],
       aaModels: [aaModel({ slug: 'nr-slug', name: 'Fixture Model 99 (Non-reasoning)' })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     expect(result.rows).toHaveLength(1)
@@ -238,6 +252,7 @@ describe('joinModels', () => {
       catalogue: catalogueRows,
       pricing: pricingRows,
       aaModels: [aaModel({ slug: 'fixture-aa' })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     const row = result.rows[0]!
@@ -258,6 +273,7 @@ describe('joinModels', () => {
       catalogue: catalogueRows,
       pricing: [],
       aaModels: [aaModel({ slug: 'fixture-aa' })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     const row = result.rows[0]!
@@ -275,6 +291,7 @@ describe('joinModels', () => {
       catalogue: [catalogue({ name: 'Model A' })],
       pricing: [pricing({ slug: 'model-a' })],
       aaModels: [aaModel({ slug: 'fixture-aa', coding: null })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     expect(result.rows[0]!.coding).toBeNull()
@@ -310,6 +327,7 @@ describe('joinModels', () => {
       catalogue: catalogueRows,
       pricing: pricingRows,
       aaModels: [aaModel({ slug: 'shared-aa' })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     const base = result.rows.find((r) => r.cursorSlug === 'base-model')!
@@ -344,6 +362,7 @@ describe('joinModels', () => {
           costPerTask: 1.23,
         }),
       ],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     const base = result.rows.find((r) => r.cursorSlug === 'base-model')!
@@ -372,6 +391,7 @@ describe('joinModels', () => {
       catalogue: [catalogue({ name: 'Model A' })],
       pricing: [pricing({ slug: 'model-a' })],
       aaModels: [aaModel({ slug: 'fixture-aa' })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     expect(result.rows[0]!.aaVariantNote).toBe('alias -> Claude 4 Sonnet (Reasoning)')
@@ -397,6 +417,7 @@ describe('joinModels', () => {
         pricing({ slug: 'model-c' }),
       ],
       aaModels: [aaModel({ slug: 'fixture-aa' }), aaModel({ slug: 'aa-c' })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     expect(result.rows).toHaveLength(3)
@@ -434,6 +455,7 @@ describe('joinModels', () => {
       catalogue: catalogueRows,
       pricing: pricingRows,
       aaModels: [],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     const row = result.rows[0]!
@@ -461,6 +483,7 @@ describe('joinModels', () => {
           ],
           pricing: [],
           aaModels: [aaModel({ slug: 'fixture-aa' })],
+          cursorTokenRate: TOKEN_RATE,
         }),
       /No Prices/,
     )
@@ -474,6 +497,7 @@ describe('joinModels', () => {
       catalogue: [catalogue({ name: 'Model A' })],
       pricing: [pricing({ slug: 'model-a' })],
       aaModels: [aaModel({ slug: 'fixture-aa', costPerTask: null })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     expect(result.rows[0]!.aaCostPerTask).toBeNull()
@@ -492,10 +516,41 @@ describe('joinModels', () => {
       catalogue: catalogueRows,
       pricing: pricingRows,
       aaModels: [aaModel({ slug: 'fixture-aa' })],
+      cursorTokenRate: TOKEN_RATE,
     })
 
     const row = result.rows[0]!
     expect(row.provider).toBe('Markdown Provider')
     expect(row.hidden).toBe(true)
+  })
+
+  test('19 — Cursor Token Rate eligibility: first-party and listed models are exempt', () => {
+    const names = ['Claude Sonnet 5', 'Grok 4.6', 'GPT-5 Mini']
+    const declarations = names.map((name) =>
+      decl({ cursorName: name, cursorSlug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }),
+    )
+    const catalogueRows = [
+      catalogue({ name: 'Claude Sonnet 5', provider: 'Anthropic' }),
+      catalogue({ name: 'Grok 4.6', provider: 'Cursor' }),
+      catalogue({ name: 'GPT-5 Mini', provider: 'OpenAI' }),
+    ]
+
+    const result = joinModels({
+      declarations,
+      catalogue: catalogueRows,
+      pricing: [],
+      aaModels: [aaModel({ slug: 'fixture-aa' })],
+      // Spelled differently from the catalogue on purpose: matching is by slug.
+      cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['gpt-5 MINI'] },
+    })
+
+    const eligibility = Object.fromEntries(
+      result.rows.map((row) => [row.cursorName, row.cursorTokenRateEligible]),
+    )
+    expect(eligibility).toEqual({
+      'Claude Sonnet 5': true,
+      'Grok 4.6': false,
+      'GPT-5 Mini': false,
+    })
   })
 })

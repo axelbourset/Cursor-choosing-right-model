@@ -4,7 +4,7 @@ import { findViolations } from './guard-no-data'
 
 function validSnapshot(): Snapshot {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: {
       aaIndexVersion: 1,
@@ -21,6 +21,7 @@ function validSnapshot(): Snapshot {
       aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
+    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
     models: [
       {
         cursorName: 'Fixture Model',
@@ -38,6 +39,7 @@ function validSnapshot(): Snapshot {
         priceOutput: 0.02,
         priceCacheRead: 0.003,
         priceCacheWrite: 0.004,
+        cursorTokenRateEligible: false,
       },
     ],
   }

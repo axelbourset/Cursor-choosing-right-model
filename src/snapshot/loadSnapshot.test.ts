@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import type { Snapshot } from '@schema/snapshot'
+import { CURRENT_SCHEMA_VERSION, type Snapshot } from '@schema/snapshot'
 import {
   clearStoredSnapshot,
   loadSnapshot,
@@ -11,7 +11,7 @@ import {
 
 function validSnapshot(): Snapshot {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: {
       aaIndexVersion: 1,
@@ -28,6 +28,7 @@ function validSnapshot(): Snapshot {
       aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
+    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
     models: [
       {
         cursorName: 'Fixture Model',
@@ -45,6 +46,7 @@ function validSnapshot(): Snapshot {
         priceOutput: 0.02,
         priceCacheRead: 0.003,
         priceCacheWrite: 0.004,
+        cursorTokenRateEligible: false,
       },
     ],
   }
@@ -96,7 +98,19 @@ describe('parseSnapshot', () => {
   test('4 — valid shape with schemaVersion 99', () => {
     const snapshot = { ...validSnapshot(), schemaVersion: 99 }
     const result = parseSnapshot(JSON.stringify(snapshot), 'dropped')
-    expect(result).toEqual({ kind: 'stale', found: 99, expected: 1 })
+    expect(result).toEqual({ kind: 'stale', found: 99, expected: CURRENT_SCHEMA_VERSION })
+  })
+
+  test('4b — a version 1 snapshot, written before the Cursor Token Rate, is stale', () => {
+    const v1Fields = new Set(['cursorTokenRate', 'cursorTokenRateEligible'])
+    const v1File = JSON.stringify(
+      { ...validSnapshot(), schemaVersion: 1 },
+      (key, value: unknown) => (v1Fields.has(key) ? undefined : value),
+    )
+    expect(v1File).not.toContain('cursorTokenRate')
+
+    const result = parseSnapshot(v1File, 'dropped')
+    expect(result).toEqual({ kind: 'stale', found: 1, expected: CURRENT_SCHEMA_VERSION })
   })
 
   test('12 — never throws', () => {
@@ -154,7 +168,7 @@ describe('loadSnapshot', () => {
   test('8c — storage is stale, fetchLocal returns null', async () => {
     const storage = createStorage(JSON.stringify({ ...validSnapshot(), schemaVersion: 99 }))
     const result = await loadSnapshot(storage, async () => null)
-    expect(result).toEqual({ kind: 'stale', found: 99, expected: 1 })
+    expect(result).toEqual({ kind: 'stale', found: 99, expected: CURRENT_SCHEMA_VERSION })
   })
 })
 

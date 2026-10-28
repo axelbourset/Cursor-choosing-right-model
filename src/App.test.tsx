@@ -36,13 +36,14 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
     priceOutput: 0.02,
     priceCacheRead: 0.003,
     priceCacheWrite: 0.004,
+    cursorTokenRateEligible: false,
     ...overrides,
   }
 }
 
 function makeSnapshot(models: ModelRow[], generatedAt = '2026-08-21T12:00:00.000Z'): Snapshot {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt,
     source: {
       aaIndexVersion: 163,
@@ -57,6 +58,7 @@ function makeSnapshot(models: ModelRow[], generatedAt = '2026-08-21T12:00:00.000
       aaCostPerTask: models.length,
     },
     unmatched: [],
+    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
     models,
   }
 }

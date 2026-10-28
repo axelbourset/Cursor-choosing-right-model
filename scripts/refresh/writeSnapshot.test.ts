@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { snapshotSchema, type Snapshot } from '@schema/snapshot'
+import { CURRENT_SCHEMA_VERSION, snapshotSchema, type Snapshot } from '@schema/snapshot'
 import {
   SNAPSHOT_PATH,
   SnapshotWriteError,
@@ -9,7 +9,7 @@ import {
 
 function validSnapshot(): Snapshot {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: {
       aaIndexVersion: 1,
@@ -26,6 +26,7 @@ function validSnapshot(): Snapshot {
       aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
+    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
     models: [
       {
         cursorName: 'Fixture Model',
@@ -43,6 +44,7 @@ function validSnapshot(): Snapshot {
         priceOutput: 0.02,
         priceCacheRead: 0.003,
         priceCacheWrite: 0.004,
+        cursorTokenRateEligible: false,
       },
     ],
   }
@@ -137,9 +139,12 @@ describe('writeSnapshot', () => {
     expect(order).toEqual(['writeFile', 'rename'])
   })
 
-  test('3 — an invalid snapshot (schemaVersion: 2)', async () => {
+  test('3 — an invalid snapshot (a schemaVersion this build does not write)', async () => {
     const { writer, calls } = createFakeWriter()
-    const invalid = { ...validSnapshot(), schemaVersion: 2 as 1 }
+    const invalid = {
+      ...validSnapshot(),
+      schemaVersion: (CURRENT_SCHEMA_VERSION + 1) as typeof CURRENT_SCHEMA_VERSION,
+    }
 
     await expect(writeSnapshot(invalid, writer)).rejects.toThrow(SnapshotWriteError)
     expect(calls.writeFile).toHaveLength(0)

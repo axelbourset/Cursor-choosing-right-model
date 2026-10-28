@@ -5,7 +5,7 @@ const nullableNumber = z.number().nullable()
 
 /** Bumping this rejects every older snapshot. Referenced by `snapshotSchema` and by the
  *  loader's staleness check, so the writer and reader cannot disagree. */
-export const CURRENT_SCHEMA_VERSION = 1
+export const CURRENT_SCHEMA_VERSION = 2
 
 /** One Cursor model joined to its Artificial Analysis record. The unit the whole app
  *  renders; every nullable field means "not measured", never zero. */
@@ -26,6 +26,10 @@ export const modelRowSchema = z.object({
   priceOutput: nullableNumber,
   priceCacheRead: nullableNumber,
   priceCacheWrite: nullableNumber,
+  /** Whether Cursor adds its Cursor Token Rate on top of this row's list prices. Prices
+   *  above stay list prices; the surcharge is applied as a view, so a rate change needs no
+   *  data migration. */
+  cursorTokenRateEligible: z.boolean(),
 })
 
 /** Dataset-level counts, derived from the rows rather than asserted. Lets the UI say
@@ -49,6 +53,15 @@ export const unmatchedEntrySchema = z.object({
 })
 export type UnmatchedEntry = z.infer<typeof unmatchedEntrySchema>
 
+/** Cursor's flat per-token surcharge on eligible third-party models (Teams and Enterprise
+ *  plans), parsed from the `## Cursor Token Rate` section of the pricing page. Kept beside
+ *  the rows so the site can add it without hard-coding an amount Cursor may change. */
+export const cursorTokenRateSchema = z.object({
+  usdPerMillionTokens: z.number().nonnegative(),
+  excludedModels: z.array(z.string().min(1)),
+})
+export type CursorTokenRate = z.infer<typeof cursorTokenRateSchema>
+
 /** The complete on-disk artifact `scripts/refresh` writes and the site loads. This is the
  *  contract between the two halves of the project: everything else is written against it. */
 export const snapshotSchema = z
@@ -61,6 +74,7 @@ export const snapshotSchema = z
     }),
     coverage: coverageSchema,
     unmatched: z.array(unmatchedEntrySchema),
+    cursorTokenRate: cursorTokenRateSchema,
     models: z.array(modelRowSchema),
   })
   // Coverage is derived from models, so a snapshot claiming counts the rows cannot support

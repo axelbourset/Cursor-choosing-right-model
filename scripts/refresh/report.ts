@@ -1,6 +1,25 @@
 import type { Snapshot } from '@schema/snapshot'
 import { hasChanges, type SnapshotChanges } from './changes'
+import { CURSOR_FIRST_PARTY_PROVIDER, unmatchedExclusions } from './cursorTokenRate'
 import { SNAPSHOT_PATH } from './writeSnapshot'
+
+/** One line: the amount, who pays it, and why the rest do not. Exclusion names with no
+ *  catalogue row are expected (Cursor lists models it no longer prices), so they are listed
+ *  for the operator to eyeball rather than treated as a problem. */
+function tokenRateLine(snapshot: Snapshot): string {
+  const rate = snapshot.cursorTokenRate
+  const eligible = snapshot.models.filter((row) => row.cursorTokenRateEligible).length
+  const exempt = snapshot.models.length - eligible
+  const firstParty = snapshot.models.filter(
+    (row) => !row.cursorTokenRateEligible && row.provider === CURSOR_FIRST_PARTY_PROVIDER,
+  ).length
+  const unmatched = unmatchedExclusions(rate, new Set(snapshot.models.map((row) => row.cursorSlug)))
+  const notInCatalogue =
+    unmatched.length === 0
+      ? ''
+      : ` · ${unmatched.length} listed exclusions not in catalogue: ${unmatched.join(', ')}`
+  return `Token rate:       $${rate.usdPerMillionTokens} / 1M tokens · ${eligible} eligible · ${exempt} exempt (${firstParty} Cursor, ${exempt - firstParty} excluded)${notInCatalogue}`
+}
 
 /** Returns the lines to print. Pure — the caller does the printing. */
 export function buildReport(
@@ -31,6 +50,8 @@ export function buildReport(
       lines.push(`  - ${entry.cursorName} — ${entry.reason}`)
     }
   }
+
+  lines.push(tokenRateLine(snapshot))
 
   if (rateLimitRemaining === null) {
     lines.push('AA rate limit remaining: unknown')
@@ -68,6 +89,17 @@ export function buildChangeReport(
       lines.push(
         `  ~ ${change.cursorName}: ${mappingLabel(change.from)} -> ${mappingLabel(change.to)}`,
       )
+    }
+    if (changes.tokenRate) {
+      lines.push(
+        `  ~ Cursor Token Rate: $${changes.tokenRate.from} -> $${changes.tokenRate.to} per 1M tokens`,
+      )
+    }
+    for (const name of changes.nowEligible) {
+      lines.push(`  ~ ${name}: now pays the Cursor Token Rate`)
+    }
+    for (const name of changes.nowExempt) {
+      lines.push(`  ~ ${name}: now exempt from the Cursor Token Rate`)
     }
   }
 

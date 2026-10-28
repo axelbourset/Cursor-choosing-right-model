@@ -133,9 +133,29 @@ Learn more about [Teams pricing](https://cursor.com/docs/account/teams/pricing.m
 
 ## Cursor Token Rate
 
-On Teams and Enterprise plans, third-party model requests include a Cursor Token Rate of $0.25 per million tokens. This rate applies on top of model API pricing for included usage, on-demand usage, and BYOK usage.
+On Teams and Enterprise plans, eligible third-party model requests include a Cursor Token Rate of $0.25 per million tokens. This rate applies on top of model API pricing for additional usage and BYOK usage. Individual plans don't pay it.
 
-The Cursor Token Rate applies when you select a third-party model directly, and when Auto Balance or Auto Intelligence routes to a third-party model. Auto Cost and all first-party Cursor models, including Grok 4.6, Grok 4.5, and Composer 2.5, are exempt from the Cursor Token Rate.
+The rate applies when you select an eligible third-party model directly, and when Cursor Router (Balance or Intelligence) routes to one. It applies to input tokens, output tokens, and cached tokens.
+
+The Cursor Token Rate does not apply to Cursor models, including Grok and Composer, or to Cost mode requests.
+
+These models are excluded from the Cursor Token Rate:
+
+- Claude Haiku 5.5
+- Gemini 2.5 Flash
+- Gemini 3 Flash
+- Gemini 3.1 Flash Lite
+- Gemini 3.5 Flash Lite
+- Gemini 3.7 Flash
+- Gemini 3.8 Flash
+- GLM 5.3 Flash
+- GPT-4.1 Nano
+- GPT-4o Mini
+- GPT-5 Mini
+- GPT-5.1 Codex Mini
+- GPT-5.4 Mini
+- GPT-5.4 Nano
+- GPT-5.6 Luna
 
 ## Auto modes
 

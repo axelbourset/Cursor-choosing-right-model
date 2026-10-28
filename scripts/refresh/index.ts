@@ -2,13 +2,9 @@ import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { computeCoverage } from '@domain/coverage'
-import {
-  API_KEY_PLACEHOLDER,
-  CURRENT_SCHEMA_VERSION,
-  snapshotSchema,
-  type Snapshot,
-} from '@schema/snapshot'
-import { diffSnapshots } from './changes'
+import { API_KEY_PLACEHOLDER, CURRENT_SCHEMA_VERSION, type Snapshot } from '@schema/snapshot'
+import { diffSnapshots, previousSnapshotSchema, type PreviousSnapshot } from './changes'
+import { parseCursorTokenRate } from './cursorTokenRate'
 import { fetchArtificialAnalysis } from './fetchArtificialAnalysis'
 import { fetchCursorMarkdown } from './fetchCursorMarkdown'
 import { fetchCursorPricingJson } from './fetchCursorPricingJson'
@@ -22,10 +18,14 @@ import { resolveDeclarations } from './resolve'
 import type { Transport } from './transport'
 import { writeSnapshot, SNAPSHOT_PATH, type SnapshotFileWriter } from './writeSnapshot'
 
-/** Best-effort: a missing or unreadable previous snapshot just means "no changes to show". */
-async function readPreviousSnapshot(snapshotPath: string): Promise<Snapshot | null> {
+/** Best-effort: a missing or unreadable previous snapshot just means "no changes to show".
+ *  Read with the diff's own lenient schema, so a file from an older schema version still
+ *  diffs. */
+async function readPreviousSnapshot(snapshotPath: string): Promise<PreviousSnapshot | null> {
   try {
-    const parsed = snapshotSchema.safeParse(JSON.parse(await readFile(snapshotPath, 'utf-8')))
+    const parsed = previousSnapshotSchema.safeParse(
+      JSON.parse(await readFile(snapshotPath, 'utf-8')),
+    )
     return parsed.success ? parsed.data : null
   } catch {
     return null
@@ -43,7 +43,7 @@ export type RefreshDeps = {
   /** Hand-written exceptions to the derived mapping. Normally empty. */
   readonly overrides: Overrides
   /** The snapshot on disk before this run, for change reporting. Null on a first run. */
-  readonly previousSnapshot: Snapshot | null
+  readonly previousSnapshot: PreviousSnapshot | null
 }
 
 export type RefreshOutcome =
@@ -67,12 +67,15 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
       fetchCursorMarkdown(transport),
     ])
     const catalogue = parseCursorMarkdown(markdown)
+    // Same document, so no extra request: the rate section sits beside the pricing tables.
+    const cursorTokenRate = parseCursorTokenRate(markdown)
     const resolved = resolveDeclarations(overrides, catalogue, aaResult.models)
     const joinResult = joinModels({
       declarations: resolved.declarations,
       catalogue,
       pricing,
       aaModels: aaResult.models,
+      cursorTokenRate,
     })
     const coverage = computeCoverage(joinResult.rows)
     const snapshot: Snapshot = {
@@ -84,11 +87,12 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
       },
       coverage,
       unmatched: [...joinResult.unresolved],
+      cursorTokenRate,
       models: [...joinResult.rows],
     }
     await writeSnapshot(snapshot, files, repoRoot)
     const lines = buildReport(snapshot, aaResult.rateLimitRemaining)
-    const changes = diffSnapshots(previousSnapshot, snapshot.models)
+    const changes = diffSnapshots(previousSnapshot, snapshot)
     return {
       kind: 'ok',
       lines,

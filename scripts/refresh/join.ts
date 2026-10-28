@@ -1,4 +1,5 @@
-import type { ModelRow, UnmatchedEntry } from '@schema/snapshot'
+import type { CursorTokenRate, ModelRow, UnmatchedEntry } from '@schema/snapshot'
+import { excludedSlugs, isTokenRateEligible } from './cursorTokenRate'
 import type { CursorModelDeclaration } from './declaration'
 import type { AaModel } from './fetchArtificialAnalysis'
 import type { CursorPrice } from './fetchCursorPricingJson'
@@ -18,6 +19,8 @@ export type JoinInput = {
   readonly catalogue: readonly CursorCatalogueRow[]
   readonly pricing: readonly CursorPrice[]
   readonly aaModels: readonly AaModel[]
+  /** Decides each row's `cursorTokenRateEligible`. */
+  readonly cursorTokenRate: CursorTokenRate
 }
 
 function findPricingRow(
@@ -102,7 +105,8 @@ function buildCatalogueIndex(
  *  row, so a membership failure here is an internal invariant violation, and a stale alias
  *  can only come from a hand-written override naming a slug AA no longer publishes. */
 export function joinModels(input: JoinInput): JoinResult {
-  const { declarations, catalogue, pricing, aaModels } = input
+  const { declarations, catalogue, pricing, aaModels, cursorTokenRate } = input
+  const excluded = excludedSlugs(cursorTokenRate)
   const declarationNames = new Set(declarations.map((d) => d.cursorName))
   const catalogueByName = buildCatalogueIndex(catalogue)
   const aaBySlug = buildAaIndex(aaModels)
@@ -123,6 +127,10 @@ export function joinModels(input: JoinInput): JoinResult {
     }
 
     const prices = resolvePrices(declaration, catalogueRow, pricing)
+    const cursorTokenRateEligible = isTokenRateEligible(
+      { provider: catalogueRow.provider, cursorSlug: declaration.cursorSlug },
+      excluded,
+    )
 
     if (declaration.aaSlug === null) {
       rows.push({
@@ -138,6 +146,7 @@ export function joinModels(input: JoinInput): JoinResult {
         agentic: null,
         aaCostPerTask: null,
         ...prices,
+        cursorTokenRateEligible,
       })
       unresolved.push({ cursorName: declaration.cursorName, reason: declaration.note })
       continue
@@ -165,6 +174,7 @@ export function joinModels(input: JoinInput): JoinResult {
       agentic: aaRecord.agentic,
       aaCostPerTask: aaRecord.costPerTask,
       ...prices,
+      cursorTokenRateEligible,
     })
   }
 
