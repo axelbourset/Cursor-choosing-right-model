@@ -184,7 +184,7 @@ export function App() {
               costAxis={state.costAxis}
               showFrontier={state.showFrontier}
               includeCursorTokenRate={state.includeCursorTokenRate}
-              cursorTokenRate={okResult.snapshot.cursorTokenRate.usdPerMillionTokens}
+              cursorTokenRate={okResult.snapshot.cursorTokenRate}
               onFiltersChange={(filters) => {
                 set({ filters })
               }}

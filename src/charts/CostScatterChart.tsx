@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import * as echarts from 'echarts'
-import type { CostAxisKey, MetricKey, ModelRow } from '@schema/snapshot'
+import type { CostAxisKey, CursorTokenRate, MetricKey, ModelRow } from '@schema/snapshot'
 import { COST_AXIS_KEYS, METRIC_KEYS } from '@schema/snapshot'
 import { makeParetoResult } from '@domain/pareto'
 import { selectPlottable, type Filters } from '@domain/selection'
@@ -29,8 +29,8 @@ type CostScatterChartProps = {
   readonly showFrontier: boolean
   /** Whether `rows` carry the Cursor Token Rate. App applies it; this only labels it. */
   readonly includeCursorTokenRate: boolean
-  /** The rate in USD per 1M tokens, from the snapshot. */
-  readonly cursorTokenRate: number
+  /** The rate and its cache-read exemption threshold, from the snapshot. */
+  readonly cursorTokenRate: CursorTokenRate
   readonly onFiltersChange: (filters: Filters) => void
   readonly onMetricChange: (metric: MetricKey) => void
   readonly onCostAxisChange: (costAxis: CostAxisKey) => void
@@ -57,6 +57,8 @@ export function CostScatterChart({
   onFrontierChange,
   onCursorTokenRateChange,
 }: CostScatterChartProps) {
+  const { usdPerMillionTokens: tokenRate, exemptCacheReadBelowUsdPerMillionTokens: exemptBelow } =
+    cursorTokenRate
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
 
@@ -74,7 +76,7 @@ export function CostScatterChart({
         })
       : selection.pareto
     return buildCostScatterOption(chartPareto, metric, costAxis, showFrontier, {
-      appliedTokenRate: includeCursorTokenRate ? cursorTokenRate : null,
+      appliedTokenRate: includeCursorTokenRate ? tokenRate : null,
     })
   }, [
     selection,
@@ -83,7 +85,7 @@ export function CostScatterChart({
     costAxis,
     showFrontier,
     includeCursorTokenRate,
-    cursorTokenRate,
+    tokenRate,
   ])
 
   // Init and dispose exactly once. This used to live in the same effect as setOption, with
@@ -198,7 +200,7 @@ export function CostScatterChart({
                 Cursor Token Rate (Teams/Enterprise)
               </label>
               <p className="control__hint" id="token-rate-hint">
-                Adds ${String(cursorTokenRate)} per 1M tokens to every price of eligible third-party
+                Adds ${String(tokenRate)} per 1M tokens to every price of eligible third-party
                 models. Untick on an individual plan.
               </p>
             </div>
@@ -262,7 +264,8 @@ export function CostScatterChart({
                 Only rate-exempt models
               </label>
               <p className="control__hint" id="rate-exempt-hint">
-                Cursor&apos;s own models (Grok, Composer) and its published exclusion list.
+                Cursor&apos;s own models (Grok, Composer) and third-party models whose cache read
+                costs under ${String(exemptBelow)} per 1M tokens.
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { COST_AXIS_KEYS, type ModelRow } from '@schema/snapshot'
+import { COST_AXIS_KEYS, type CursorTokenRate, type ModelRow } from '@schema/snapshot'
 import { DEFAULT_FILTERS } from '@domain/selection'
 import * as echarts from 'echarts'
 import { CostScatterChart } from './CostScatterChart'
@@ -26,6 +26,11 @@ class FakeResizeObserver {
   readonly unobserve = vi.fn()
 }
 vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+
+const TOKEN_RATE: CursorTokenRate = {
+  usdPerMillionTokens: 0.25,
+  exemptCacheReadBelowUsdPerMillionTokens: 0.1,
+}
 
 function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
   return {
@@ -91,7 +96,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -118,7 +123,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -164,7 +169,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -187,7 +192,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -208,7 +213,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -231,7 +236,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -259,7 +264,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -281,7 +286,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -306,7 +311,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -333,7 +338,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={onCostAxisChange}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -358,7 +363,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={onCostAxisChange}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={false}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -384,7 +389,7 @@ describe('CostScatterChart', () => {
       onCostAxisChange: vi.fn(),
       onFrontierChange: vi.fn(),
       includeCursorTokenRate: false,
-      cursorTokenRate: 0.25,
+      cursorTokenRate: TOKEN_RATE,
       onCursorTokenRateChange: vi.fn(),
     }
 
@@ -414,7 +419,7 @@ describe('CostScatterChart', () => {
           onCostAxisChange={vi.fn()}
           onFrontierChange={vi.fn()}
           includeCursorTokenRate={true}
-          cursorTokenRate={0.25}
+          cursorTokenRate={TOKEN_RATE}
           onCursorTokenRateChange={onCursorTokenRateChange}
         />,
       )
@@ -445,7 +450,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={true}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
@@ -455,6 +460,31 @@ describe('CostScatterChart', () => {
     fireEvent.click(checkbox)
 
     expect(onFiltersChange).toHaveBeenCalledWith({ ...filters, tokenRateExemptOnly: true })
+  })
+
+  test('18b — the rate hints show the amount and the cache-read threshold from the snapshot', () => {
+    render(
+      <CostScatterChart
+        rows={[makeRow()]}
+        filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
+        metric="intelligence"
+        costAxis="cacheRead"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
+        onFrontierChange={vi.fn()}
+        includeCursorTokenRate={true}
+        cursorTokenRate={{ usdPerMillionTokens: 0.3, exemptCacheReadBelowUsdPerMillionTokens: 0.2 }}
+        onCursorTokenRateChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/Adds \$0\.3 per 1M tokens/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/third-party models whose cache read costs under \$0\.2 per 1M tokens/),
+    ).toBeInTheDocument()
   })
 
   test('19 — the chart resizes when its own box does, and stops watching on unmount', () => {
@@ -472,7 +502,7 @@ describe('CostScatterChart', () => {
         onCostAxisChange={vi.fn()}
         onFrontierChange={vi.fn()}
         includeCursorTokenRate={true}
-        cursorTokenRate={0.25}
+        cursorTokenRate={TOKEN_RATE}
         onCursorTokenRateChange={vi.fn()}
       />,
     )
