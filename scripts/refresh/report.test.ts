@@ -267,17 +267,29 @@ describe('buildChangeReport', () => {
 
 describe('buildWarnings', () => {
   test('1 — no regressions, no lines', () => {
-    expect(buildWarnings({ indexVersion: null, resolved: null })).toEqual([])
+    expect(buildWarnings({ indexVersion: null, resolved: null }, [])).toEqual([])
   })
 
   test('2 — an index version change and a coverage drop each get a WARNING line', () => {
-    const lines = buildWarnings({
-      indexVersion: { from: 4.3, to: 5 },
-      resolved: { from: 57, to: 13 },
-    })
+    const lines = buildWarnings(
+      {
+        indexVersion: { from: 4.3, to: 5 },
+        resolved: { from: 57, to: 13 },
+      },
+      [],
+    )
 
     expect(lines).toHaveLength(2)
     expect(lines[0]).toMatch(/^WARNING: Artificial Analysis index version changed 4\.3 -> 5\./)
     expect(lines[1]).toMatch(/^WARNING: matched models fell from 57 to 13 \(-77%\)/)
+  })
+
+  test('3 — third-party models with no cache-read price share one WARNING line', () => {
+    const lines = buildWarnings({ indexVersion: null, resolved: null }, ['Odd Model', 'Other'])
+
+    expect(lines).toHaveLength(1)
+    expect(lines[0]).toMatch(
+      /^WARNING: no cache-read price for Odd Model, Other\. .* each is counted as paying the rate\./,
+    )
   })
 })

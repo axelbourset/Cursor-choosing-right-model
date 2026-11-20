@@ -40,10 +40,10 @@ The refresh reads the rate and the threshold from the same Cursor pricing page a
 table, and decides each model's eligibility from the cache-read price stored in the
 snapshot. Cursor applies the threshold "across every pricing tier", but tier prices only
 appear in the table's free-text notes, so the refresh compares the listed price. A
-third-party model with no cache-read price is counted as paying the rate. The **Cursor Token
-Rate (Teams/Enterprise)** checkbox in the chart's Pricing settings, on by default, adds it to
-every price shown in the chart, tooltip and table. Untick it if you are on an individual
-plan.
+third-party model with no cache-read price is counted as paying the rate, and the refresh
+prints a WARNING naming it. The **Cursor Token Rate (Teams/Enterprise)** checkbox in the
+chart's Pricing settings, on by default, adds it to every price shown in the chart, tooltip
+and table. Untick it if you are on an individual plan.
 
 A snapshot written before the threshold rule (schema version 1 or 2) is reported as stale:
 run `npm run refresh` again and drop the new `data/models.json`.

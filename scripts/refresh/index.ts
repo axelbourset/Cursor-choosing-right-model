@@ -9,7 +9,7 @@ import {
   previousSnapshotSchema,
   type PreviousSnapshot,
 } from './changes'
-import { parseCursorTokenRate } from './cursorTokenRate'
+import { parseCursorTokenRate, thirdPartyWithoutCacheRead } from './cursorTokenRate'
 import { fetchArtificialAnalysis } from './fetchArtificialAnalysis'
 import { fetchCursorMarkdown } from './fetchCursorMarkdown'
 import { fetchCursorPricingJson } from './fetchCursorPricingJson'
@@ -104,7 +104,10 @@ export async function runRefresh(deps: RefreshDeps, apiKey: string): Promise<Ref
       kind: 'ok',
       lines,
       changeLines: buildChangeReport(changes, resolved.unusedOverrides),
-      warningLines: buildWarnings(detectScoreRegressions(previousSnapshot, snapshot)),
+      warningLines: buildWarnings(
+        detectScoreRegressions(previousSnapshot, snapshot),
+        thirdPartyWithoutCacheRead(snapshot.models),
+      ),
     }
   } catch (error) {
     // Not JSON.stringify: it returns undefined for a function or symbol and throws on a

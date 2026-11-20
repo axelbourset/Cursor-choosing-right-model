@@ -2,7 +2,11 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
-import { isTokenRateEligible, parseCursorTokenRate } from './cursorTokenRate'
+import {
+  isTokenRateEligible,
+  parseCursorTokenRate,
+  thirdPartyWithoutCacheRead,
+} from './cursorTokenRate'
 import { CursorMarkdownError } from './parseCursorMarkdown'
 
 const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../fixtures')
@@ -123,5 +127,15 @@ describe('eligibility', () => {
 
   test('13 — a third-party model with no cache-read price pays it, the exemption is unproven', () => {
     expect(isTokenRateEligible({ provider: 'OpenAI', priceCacheRead: null }, rate)).toBe(true)
+  })
+
+  test('14 — third-party models with no cache-read price are named for a warning, Cursor ones are not', () => {
+    expect(
+      thirdPartyWithoutCacheRead([
+        { cursorName: 'Odd Model', provider: 'OpenAI', priceCacheRead: null },
+        { cursorName: 'Priced', provider: 'OpenAI', priceCacheRead: 0.3 },
+        { cursorName: 'Grok 4.6', provider: 'Cursor', priceCacheRead: null },
+      ]),
+    ).toEqual(['Odd Model'])
   })
 })

@@ -455,6 +455,48 @@ describe('runRefresh', () => {
     expect(result.kind === 'ok' && result.warningLines).toEqual([])
   })
 
+  test('14d — a third-party model with no cache-read price pays the rate, warns, and still writes', async () => {
+    const { writer, calls } = createFakeWriter()
+    const base = fixtureTransport(readFixture)
+    const transport: Transport = async (url, headers) => {
+      if (url.includes('/docs/models-and-pricing.md')) {
+        const response = await base(url, headers)
+        const markdown = await response.text()
+        return {
+          ...response,
+          text: async () =>
+            markdown.replace(
+              '| Grok 4.6 ',
+              '| Odd Model | OpenAI | $1 | - | - | $5 | - |\n| Grok 4.6 ',
+            ),
+        }
+      }
+      return base(url, headers)
+    }
+
+    const result = await runRefresh(
+      {
+        transport,
+        files: writer,
+        now: () => '2026-08-21T12:00:00.000Z',
+        minExpectedAaModels: 40,
+        overrides: new Map(),
+        previousSnapshot: null,
+        repoRoot: '.',
+      },
+      'fixture',
+    )
+
+    expect(result.kind).toBe('ok')
+    expect(calls.writeFile).toHaveLength(1)
+    const snapshot = snapshotSchema.parse(JSON.parse(calls.writeFile[0]!.data))
+    const row = snapshot.models.find((m) => m.cursorName === 'Odd Model')
+    expect(row).toMatchObject({ priceCacheRead: null, cursorTokenRateEligible: true })
+    expect(result.kind === 'ok' && result.warningLines).toEqual([
+      expect.stringMatching(/^WARNING: no cache-read price for Odd Model\./),
+    ])
+  })
+
   test('15 — an override for a model Cursor does not publish is reported, not fatal', async () => {
     const { deps } = createFixtureDeps({
       overrides: new Map([['Not A Real Model', { aaSlug: null, reason: 'stale entry' }]]),

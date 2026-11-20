@@ -57,7 +57,8 @@ export function parseCursorTokenRate(markdown: string): CursorTokenRate {
 /** PURE. Whether Cursor adds its Token Rate to this model's list prices. Cursor's own models
  *  never pay it. A third-party model is exempt only when its cache-read price is strictly
  *  below the threshold; the listed price stands in for every pricing tier. A missing price
- *  cannot prove the exemption, so the model pays. */
+ *  cannot prove the exemption, so the model pays, and `thirdPartyWithoutCacheRead` names it
+ *  for a warning. */
 export function isTokenRateEligible(
   model: Pick<ModelRow, 'provider' | 'priceCacheRead'>,
   rate: Pick<CursorTokenRate, 'exemptCacheReadBelowUsdPerMillionTokens'>,
@@ -69,4 +70,14 @@ export function isTokenRateEligible(
     model.priceCacheRead === null ||
     model.priceCacheRead >= rate.exemptCacheReadBelowUsdPerMillionTokens
   )
+}
+
+/** PURE. Third-party models with no cache-read price. `isTokenRateEligible` counts them as
+ *  paying the rate, which may overstate their price, so the refresh warns about each. */
+export function thirdPartyWithoutCacheRead(
+  models: readonly Pick<ModelRow, 'cursorName' | 'provider' | 'priceCacheRead'>[],
+): readonly string[] {
+  return models
+    .filter((row) => row.provider !== CURSOR_FIRST_PARTY_PROVIDER && row.priceCacheRead === null)
+    .map((row) => row.cursorName)
 }

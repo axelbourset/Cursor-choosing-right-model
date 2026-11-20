@@ -108,8 +108,12 @@ export function buildChangeReport(
 }
 
 /** Returns warning lines for upstream shifts that degrade the snapshot without failing the
- *  run, or [] when there are none. Pure. */
-export function buildWarnings(regressions: ScoreRegressions): readonly string[] {
+ *  run, or [] when there are none. Pure. `withoutCacheRead` names the third-party models
+ *  counted as paying the Cursor Token Rate only because they have no cache-read price. */
+export function buildWarnings(
+  regressions: ScoreRegressions,
+  withoutCacheRead: readonly string[],
+): readonly string[] {
   const lines: string[] = []
 
   if (regressions.indexVersion) {
@@ -124,6 +128,12 @@ export function buildWarnings(regressions: ScoreRegressions): readonly string[] 
     const drop = Math.round(((from - to) / from) * 100)
     lines.push(
       `WARNING: matched models fell from ${from} to ${to} (-${drop}%) since the previous snapshot. Check the unmatched list above before using this snapshot.`,
+    )
+  }
+
+  if (withoutCacheRead.length > 0) {
+    lines.push(
+      `WARNING: no cache-read price for ${withoutCacheRead.join(', ')}. The Cursor Token Rate exemption can't be checked without one, so each is counted as paying the rate. Check them on Cursor's pricing page.`,
     )
   }
 
