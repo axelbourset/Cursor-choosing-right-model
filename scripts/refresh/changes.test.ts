@@ -30,7 +30,7 @@ function row(overrides: Partial<ModelRow> & Pick<ModelRow, 'cursorName'>): Model
 
 function snapshot(models: readonly ModelRow[], usdPerMillionTokens = 0.25): Snapshot {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: { aaIndexVersion: 4.1, attribution: 'Artificial Analysis (artificialanalysis.ai)' },
     coverage: {
@@ -42,7 +42,7 @@ function snapshot(models: readonly ModelRow[], usdPerMillionTokens = 0.25): Snap
       aaCostPerTask: models.length,
     },
     unmatched: [],
-    cursorTokenRate: { usdPerMillionTokens, excludedModels: ['Excluded Model'] },
+    cursorTokenRate: { usdPerMillionTokens, exemptCacheReadBelowUsdPerMillionTokens: 0.1 },
     models: [...models],
   }
 }
@@ -169,6 +169,26 @@ describe('diffSnapshots', () => {
     expect(changes.tokenRate).toBeNull()
     expect(changes.nowEligible).toEqual([])
     expect(changes.nowExempt).toEqual([])
+  })
+
+  test('12 — a version 2 previous snapshot, which named exempt models, still diffs', () => {
+    const v2File = {
+      schemaVersion: 2,
+      cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['GPT-5 Mini'] },
+      models: [
+        { cursorName: 'DeepSeek V4.1 Flash', aaSlug: 'aa-slug', cursorTokenRateEligible: true },
+      ],
+    }
+    const previous = previousSnapshotSchema.parse(v2File)
+
+    const changes = diffSnapshots(
+      previous,
+      snapshot([row({ cursorName: 'DeepSeek V4.1 Flash', cursorTokenRateEligible: false })]),
+    )
+
+    expect(changes.tokenRate).toBeNull()
+    expect(changes.nowExempt).toEqual(['DeepSeek V4.1 Flash'])
+    expect(changes.nowEligible).toEqual([])
   })
 })
 

@@ -139,23 +139,7 @@ The rate applies when you select an eligible third-party model directly, and whe
 
 The Cursor Token Rate does not apply to Cursor models, including Grok and Composer, or to Cost mode requests.
 
-These models are excluded from the Cursor Token Rate:
-
-- Claude Haiku 5.5
-- Gemini 2.5 Flash
-- Gemini 3 Flash
-- Gemini 3.1 Flash Lite
-- Gemini 3.5 Flash Lite
-- Gemini 3.7 Flash
-- Gemini 3.8 Flash
-- GLM 5.3 Flash
-- GPT-4.1 Nano
-- GPT-4o Mini
-- GPT-5 Mini
-- GPT-5.1 Codex Mini
-- GPT-5.4 Mini
-- GPT-5.4 Nano
-- GPT-5.6 Luna
+The Cursor Token Rate also does not apply to third-party models whose cache-read price is strictly below $0.10 per million tokens across every pricing tier. This exemption also applies when you use your own API key.
 
 ## Auto modes
 

@@ -11,7 +11,7 @@ import {
 
 function validSnapshot(): Snapshot {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: {
       aaIndexVersion: 1,
@@ -28,7 +28,7 @@ function validSnapshot(): Snapshot {
       aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
-    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
+    cursorTokenRate: { usdPerMillionTokens: 0.25, exemptCacheReadBelowUsdPerMillionTokens: 0.1 },
     models: [
       {
         cursorName: 'Fixture Model',
@@ -111,6 +111,17 @@ describe('parseSnapshot', () => {
 
     const result = parseSnapshot(v1File, 'dropped')
     expect(result).toEqual({ kind: 'stale', found: 1, expected: CURRENT_SCHEMA_VERSION })
+  })
+
+  test('4c — a version 2 snapshot, which named exempt models, is stale', () => {
+    const v2File = JSON.stringify({
+      ...validSnapshot(),
+      schemaVersion: 2,
+      cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['GPT-5 Mini'] },
+    })
+
+    const result = parseSnapshot(v2File, 'dropped')
+    expect(result).toEqual({ kind: 'stale', found: 2, expected: CURRENT_SCHEMA_VERSION })
   })
 
   test('12 — never throws', () => {

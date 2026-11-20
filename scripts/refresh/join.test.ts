@@ -6,10 +6,11 @@ import type { CursorPrice } from './fetchCursorPricingJson'
 import { JoinError, joinModels } from './join'
 import type { CursorCatalogueRow } from './parseCursorMarkdown'
 
-/** Excludes nothing in any catalogue below, so every non-Cursor row is eligible. */
+/** No factory default falls below the threshold, so every non-Cursor row is eligible unless a
+ *  test sets a lower cache-read price. */
 const TOKEN_RATE: CursorTokenRate = {
   usdPerMillionTokens: 0.25,
-  excludedModels: ['Not In Catalogue'],
+  exemptCacheReadBelowUsdPerMillionTokens: 0.1,
 }
 
 function decl(
@@ -33,6 +34,8 @@ function catalogue(
     hidden: false,
     input: 1,
     output: 2,
+    // Exactly on TOKEN_RATE's threshold: default rows pay the rate only because the exemption
+    // is strict. Tests about eligibility set `cacheRead` explicitly.
     cacheRead: 0.1,
     cacheWrite: 0.5,
     ...overrides,
@@ -524,24 +527,27 @@ describe('joinModels', () => {
     expect(row.hidden).toBe(true)
   })
 
-  test('19 — Cursor Token Rate eligibility: first-party and listed models are exempt', () => {
-    const names = ['Claude Sonnet 5', 'Grok 4.6', 'GPT-5 Mini']
-    const declarations = names.map((name) =>
-      decl({ cursorName: name, cursorSlug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }),
-    )
+  test('19 — eligibility: Cursor and cheap cache reads are exempt; the boundary and a missing price pay', () => {
     const catalogueRows = [
-      catalogue({ name: 'Claude Sonnet 5', provider: 'Anthropic' }),
-      catalogue({ name: 'Grok 4.6', provider: 'Cursor' }),
-      catalogue({ name: 'GPT-5 Mini', provider: 'OpenAI' }),
+      catalogue({ name: 'Claude Sonnet 5', provider: 'Anthropic', cacheRead: 0.3 }),
+      catalogue({ name: 'Claude 4.5 Haiku', provider: 'Anthropic', cacheRead: 0.1 }),
+      catalogue({ name: 'Grok 4.6', provider: 'Cursor', cacheRead: 0.5 }),
+      catalogue({ name: 'GPT-5 Mini', provider: 'OpenAI', cacheRead: 0.025 }),
+      catalogue({ name: 'Odd Model', provider: 'OpenAI', cacheRead: null }),
     ]
+    const declarations = catalogueRows.map((row) =>
+      decl({
+        cursorName: row.name,
+        cursorSlug: row.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      }),
+    )
 
     const result = joinModels({
       declarations,
       catalogue: catalogueRows,
       pricing: [],
       aaModels: [aaModel({ slug: 'fixture-aa' })],
-      // Spelled differently from the catalogue on purpose: matching is by slug.
-      cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['gpt-5 MINI'] },
+      cursorTokenRate: TOKEN_RATE,
     })
 
     const eligibility = Object.fromEntries(
@@ -549,8 +555,73 @@ describe('joinModels', () => {
     )
     expect(eligibility).toEqual({
       'Claude Sonnet 5': true,
+      'Claude 4.5 Haiku': true,
       'Grok 4.6': false,
       'GPT-5 Mini': false,
+      'Odd Model': true,
     })
+  })
+
+  test('19b — eligibility reads the resolved price, so pricing.json wins over the markdown', () => {
+    const catalogueRows = [
+      catalogue({ name: 'Cheap In Markdown', provider: 'OpenAI', cacheRead: 0.05 }),
+      catalogue({ name: 'Cheap In Pricing', provider: 'OpenAI', cacheRead: 0.3 }),
+      catalogue({ name: 'Missing In Pricing', provider: 'OpenAI', cacheRead: 0.05 }),
+    ]
+    const declarations = [
+      decl({ cursorName: 'Cheap In Markdown', cursorSlug: 'cheap-in-markdown' }),
+      decl({ cursorName: 'Cheap In Pricing', cursorSlug: 'cheap-in-pricing' }),
+      decl({ cursorName: 'Missing In Pricing', cursorSlug: 'missing-in-pricing' }),
+    ]
+
+    const result = joinModels({
+      declarations,
+      catalogue: catalogueRows,
+      pricing: [
+        pricing({ slug: 'cheap-in-markdown', cacheRead: 0.2 }),
+        pricing({ slug: 'cheap-in-pricing', cacheRead: 0.02 }),
+        pricing({ slug: 'missing-in-pricing', cacheRead: null }),
+      ],
+      aaModels: [aaModel({ slug: 'fixture-aa' })],
+      cursorTokenRate: TOKEN_RATE,
+    })
+
+    const rows = Object.fromEntries(result.rows.map((row) => [row.cursorName, row]))
+    expect(rows['Cheap In Markdown']).toMatchObject({
+      priceCacheRead: 0.2,
+      cursorTokenRateEligible: true,
+    })
+    expect(rows['Cheap In Pricing']).toMatchObject({
+      priceCacheRead: 0.02,
+      cursorTokenRateEligible: false,
+    })
+    // pricing.json wins even when it has no cache-read price, so the model pays.
+    expect(rows['Missing In Pricing']).toMatchObject({
+      priceCacheRead: null,
+      cursorTokenRateEligible: true,
+    })
+  })
+
+  test('19c — eligibility follows the threshold it is given, not a fixed $0.1', () => {
+    const catalogueRows = [
+      catalogue({ name: 'Mid Cache', provider: 'OpenAI', cacheRead: 0.15 }),
+      catalogue({ name: 'At New Threshold', provider: 'OpenAI', cacheRead: 0.2 }),
+    ]
+
+    const result = joinModels({
+      declarations: [
+        decl({ cursorName: 'Mid Cache', cursorSlug: 'mid-cache' }),
+        decl({ cursorName: 'At New Threshold', cursorSlug: 'at-new-threshold' }),
+      ],
+      catalogue: catalogueRows,
+      pricing: [],
+      aaModels: [aaModel({ slug: 'fixture-aa' })],
+      cursorTokenRate: { ...TOKEN_RATE, exemptCacheReadBelowUsdPerMillionTokens: 0.2 },
+    })
+
+    const eligibility = Object.fromEntries(
+      result.rows.map((row) => [row.cursorName, row.cursorTokenRateEligible]),
+    )
+    expect(eligibility).toEqual({ 'Mid Cache': false, 'At New Threshold': true })
   })
 })

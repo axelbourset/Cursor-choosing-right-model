@@ -295,12 +295,20 @@ describe('runRefresh', () => {
     const snapshot = snapshotSchema.parse(JSON.parse(calls.writeFile[0]!.data))
     const eligibility = (name: string) =>
       snapshot.models.find((row) => row.cursorName === name)?.cursorTokenRateEligible
-    expect(snapshot.cursorTokenRate.usdPerMillionTokens).toBe(0.25)
+    expect(snapshot.cursorTokenRate).toEqual({
+      usdPerMillionTokens: 0.25,
+      exemptCacheReadBelowUsdPerMillionTokens: 0.1,
+    })
     expect(eligibility('Claude 4.6 Sonnet')).toBe(true)
+    // Cache read exactly $0.1: the exemption is strictly below.
+    expect(eligibility('Claude 4.5 Haiku')).toBe(true)
+    expect(eligibility('Gemini 3.7 Flash')).toBe(false)
     expect(eligibility('GPT-5.6 Luna')).toBe(false)
     expect(eligibility('Grok 4.6')).toBe(false)
     if (result.kind === 'ok') {
-      expect(result.lines.some((line) => line.startsWith('Token rate:'))).toBe(true)
+      expect(result.lines.find((line) => line.startsWith('Token rate:'))).toMatch(
+        / · 15 exempt \(6 Cursor, 9 cache read < \$0\.1: Gemini 2\.5 Flash, /,
+      )
     }
   })
 

@@ -40,7 +40,7 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
   const coverage = computeCoverage(models)
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: {
       aaIndexVersion: 163,
@@ -48,7 +48,7 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     },
     coverage,
     unmatched: [],
-    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
+    cursorTokenRate: { usdPerMillionTokens: 0.25, exemptCacheReadBelowUsdPerMillionTokens: 0.1 },
     models,
     ...overrides,
   }
@@ -174,20 +174,35 @@ describe('buildReport', () => {
     logSpy.mockRestore()
   })
 
-  test('8 — the Cursor Token Rate line counts who pays it and lists unknown exclusions', () => {
+  test('8 — the Cursor Token Rate line counts who pays it and names the exempt third-party models', () => {
     const snapshot = makeSnapshot({
       models: [
-        makeRow({ cursorSlug: 'sonnet', provider: 'Anthropic', cursorTokenRateEligible: true }),
-        makeRow({ cursorSlug: 'grok', provider: 'Cursor', cursorTokenRateEligible: false }),
-        makeRow({ cursorSlug: 'gpt-5-mini', provider: 'OpenAI', cursorTokenRateEligible: false }),
+        makeRow({ cursorName: 'Sonnet', provider: 'Anthropic', cursorTokenRateEligible: true }),
+        makeRow({ cursorName: 'Grok', provider: 'Cursor', cursorTokenRateEligible: false }),
+        makeRow({ cursorName: 'GPT-5 Mini', provider: 'OpenAI', cursorTokenRateEligible: false }),
+        makeRow({ cursorName: 'GPT-5.6 Luna', provider: 'OpenAI', cursorTokenRateEligible: false }),
       ],
-      cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['GPT-5 Mini', 'GPT-4o Mini'] },
     })
 
     const line = buildReport(snapshot, null).find((l) => l.startsWith('Token rate:'))
 
     expect(line).toBe(
-      'Token rate:       $0.25 / 1M tokens · 1 eligible · 2 exempt (1 Cursor, 1 excluded) · 1 listed exclusions not in catalogue: GPT-4o Mini',
+      'Token rate:       $0.25 / 1M tokens · 1 eligible · 3 exempt (1 Cursor, 2 cache read < $0.1: GPT-5 Mini, GPT-5.6 Luna)',
+    )
+  })
+
+  test('8b — with no exempt third-party model the line names none', () => {
+    const snapshot = makeSnapshot({
+      models: [
+        makeRow({ cursorName: 'Sonnet', provider: 'Anthropic', cursorTokenRateEligible: true }),
+        makeRow({ cursorName: 'Grok', provider: 'Cursor', cursorTokenRateEligible: false }),
+      ],
+    })
+
+    const line = buildReport(snapshot, null).find((l) => l.startsWith('Token rate:'))
+
+    expect(line).toBe(
+      'Token rate:       $0.25 / 1M tokens · 1 eligible · 1 exempt (1 Cursor, 0 cache read < $0.1)',
     )
   })
 })

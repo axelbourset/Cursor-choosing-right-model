@@ -1,5 +1,5 @@
 import type { CursorTokenRate, ModelRow, UnmatchedEntry } from '@schema/snapshot'
-import { excludedSlugs, isTokenRateEligible } from './cursorTokenRate'
+import { isTokenRateEligible } from './cursorTokenRate'
 import type { CursorModelDeclaration } from './declaration'
 import type { AaModel } from './fetchArtificialAnalysis'
 import type { CursorPrice } from './fetchCursorPricingJson'
@@ -19,7 +19,8 @@ export type JoinInput = {
   readonly catalogue: readonly CursorCatalogueRow[]
   readonly pricing: readonly CursorPrice[]
   readonly aaModels: readonly AaModel[]
-  /** Decides each row's `cursorTokenRateEligible`. */
+  /** Its cache-read threshold decides each row's `cursorTokenRateEligible`, against the
+   *  row's resolved price. */
   readonly cursorTokenRate: CursorTokenRate
 }
 
@@ -106,7 +107,6 @@ function buildCatalogueIndex(
  *  can only come from a hand-written override naming a slug AA no longer publishes. */
 export function joinModels(input: JoinInput): JoinResult {
   const { declarations, catalogue, pricing, aaModels, cursorTokenRate } = input
-  const excluded = excludedSlugs(cursorTokenRate)
   const declarationNames = new Set(declarations.map((d) => d.cursorName))
   const catalogueByName = buildCatalogueIndex(catalogue)
   const aaBySlug = buildAaIndex(aaModels)
@@ -127,9 +127,11 @@ export function joinModels(input: JoinInput): JoinResult {
     }
 
     const prices = resolvePrices(declaration, catalogueRow, pricing)
+    // The stored price, so the flag cannot disagree with the row: pricing.json wins over the
+    // markdown here exactly as it does in `resolvePrices`.
     const cursorTokenRateEligible = isTokenRateEligible(
-      { provider: catalogueRow.provider, cursorSlug: declaration.cursorSlug },
-      excluded,
+      { provider: catalogueRow.provider, priceCacheRead: prices.priceCacheRead },
+      cursorTokenRate,
     )
 
     if (declaration.aaSlug === null) {

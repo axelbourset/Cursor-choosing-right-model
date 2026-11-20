@@ -96,9 +96,9 @@ export function hasChanges(changes: SnapshotChanges): boolean {
  *
  *  The mapping is derived fresh every run, so this is what makes that visible: an added or
  *  removed model, or a model that now resolves to a different AA record than it did before.
- *  The Cursor Token Rate and its exclusion list are Cursor's to change at any time, so a new
- *  amount or a model flipping eligibility is reported too. A previous snapshot that predates
- *  those fields reports neither, rather than reporting every model as flipped.
+ *  The Cursor Token Rate and its cache-read exemption threshold are Cursor's to change at any
+ *  time, so a new amount or a model flipping eligibility is reported too. A previous snapshot
+ *  that predates those fields reports neither, rather than reporting every model as flipped.
  *  Informational — none of it is an error. */
 export function diffSnapshots(
   previous: PreviousSnapshot | null,

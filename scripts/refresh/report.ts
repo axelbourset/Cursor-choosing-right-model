@@ -1,24 +1,21 @@
 import type { Snapshot } from '@schema/snapshot'
 import { hasChanges, type ScoreRegressions, type SnapshotChanges } from './changes'
-import { CURSOR_FIRST_PARTY_PROVIDER, unmatchedExclusions } from './cursorTokenRate'
+import { CURSOR_FIRST_PARTY_PROVIDER } from './cursorTokenRate'
 import { SNAPSHOT_PATH } from './writeSnapshot'
 
-/** One line: the amount, who pays it, and why the rest do not. Exclusion names with no
- *  catalogue row are expected (Cursor lists models it no longer prices), so they are listed
- *  for the operator to eyeball rather than treated as a problem. */
+/** One line: the amount, who pays it, and why the rest do not. The exempt third-party models
+ *  are named because Cursor publishes a price threshold, not a list: this line is the only
+ *  place the operator sees which models it caught. */
 function tokenRateLine(snapshot: Snapshot): string {
   const rate = snapshot.cursorTokenRate
   const eligible = snapshot.models.filter((row) => row.cursorTokenRateEligible).length
-  const exempt = snapshot.models.length - eligible
-  const firstParty = snapshot.models.filter(
-    (row) => !row.cursorTokenRateEligible && row.provider === CURSOR_FIRST_PARTY_PROVIDER,
-  ).length
-  const unmatched = unmatchedExclusions(rate, new Set(snapshot.models.map((row) => row.cursorSlug)))
-  const notInCatalogue =
-    unmatched.length === 0
-      ? ''
-      : ` · ${unmatched.length} listed exclusions not in catalogue: ${unmatched.join(', ')}`
-  return `Token rate:       $${rate.usdPerMillionTokens} / 1M tokens · ${eligible} eligible · ${exempt} exempt (${firstParty} Cursor, ${exempt - firstParty} excluded)${notInCatalogue}`
+  const exempt = snapshot.models.filter((row) => !row.cursorTokenRateEligible)
+  const firstParty = exempt.filter((row) => row.provider === CURSOR_FIRST_PARTY_PROVIDER).length
+  const cheap = exempt
+    .filter((row) => row.provider !== CURSOR_FIRST_PARTY_PROVIDER)
+    .map((row) => row.cursorName)
+  const names = cheap.length === 0 ? '' : `: ${cheap.join(', ')}`
+  return `Token rate:       $${rate.usdPerMillionTokens} / 1M tokens · ${eligible} eligible · ${exempt.length} exempt (${firstParty} Cursor, ${cheap.length} cache read < $${rate.exemptCacheReadBelowUsdPerMillionTokens}${names})`
 }
 
 /** Returns the lines to print. Pure — the caller does the printing. */

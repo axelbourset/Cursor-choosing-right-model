@@ -55,7 +55,7 @@ function makeRow(overrides: Partial<ModelRow> = {}): ModelRow {
 
 function makeSnapshot(models: ModelRow[], generatedAt = '2026-08-21T12:00:00.000Z'): Snapshot {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     generatedAt,
     source: {
       aaIndexVersion: 163,
@@ -70,7 +70,7 @@ function makeSnapshot(models: ModelRow[], generatedAt = '2026-08-21T12:00:00.000
       aaCostPerTask: models.length,
     },
     unmatched: [],
-    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
+    cursorTokenRate: { usdPerMillionTokens: 0.25, exemptCacheReadBelowUsdPerMillionTokens: 0.1 },
     models,
   }
 }

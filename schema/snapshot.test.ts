@@ -9,7 +9,7 @@ import {
 
 function validSnapshot() {
   return {
-    schemaVersion: 2 as const,
+    schemaVersion: 3 as const,
     generatedAt: '2026-08-21T12:00:00.000Z',
     source: {
       aaIndexVersion: 1,
@@ -26,7 +26,7 @@ function validSnapshot() {
       aaCostPerTask: 1,
     },
     unmatched: [{ cursorName: 'Fixture Unmatched', reason: 'no AA record' }],
-    cursorTokenRate: { usdPerMillionTokens: 0.25, excludedModels: ['Excluded Model'] },
+    cursorTokenRate: { usdPerMillionTokens: 0.25, exemptCacheReadBelowUsdPerMillionTokens: 0.1 },
     models: [
       {
         cursorName: 'Fixture Model',
@@ -71,6 +71,11 @@ describe('snapshotSchema', () => {
 
   test('3b — schemaVersion 1, which predates the Cursor Token Rate, is invalid', () => {
     const input = { ...validSnapshot(), schemaVersion: 1 }
+    expect(snapshotSchema.safeParse(input).success).toBe(false)
+  })
+
+  test('3d — a Cursor Token Rate without its cache-read exemption threshold is invalid', () => {
+    const input = { ...validSnapshot(), cursorTokenRate: { usdPerMillionTokens: 0.25 } }
     expect(snapshotSchema.safeParse(input).success).toBe(false)
   })
 

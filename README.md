@@ -30,16 +30,22 @@ Offline without a key: `npm run refresh -- --fixture` (synthetic data).
 
 On Teams and Enterprise plans Cursor adds a flat
 [Cursor Token Rate](https://cursor.com/docs/models-and-pricing#cursor-token-rate) per 1M
-tokens to every price of eligible third-party models. Cursor's own models (Grok, Composer)
-and a published exclusion list are exempt. It barely moves output prices but can multiply
+tokens to every price of eligible third-party models, including requests made with your own
+API key (BYOK). Cursor's own models (Grok, Composer) are exempt, and so is every third-party
+model whose cache-read price is strictly below a threshold Cursor publishes ($0.10 per 1M
+tokens at the time of writing). The rate barely moves output prices but can multiply
 cache-read prices several times over, which reorders the Pareto frontier.
 
-The refresh reads the rate and the exclusion list from the same Cursor pricing page as the
-model table, and records each model's eligibility in the snapshot. The **Cursor Token Rate
-(Teams/Enterprise)** checkbox next to the X axis, on by default, adds it to every price shown
-in the chart, tooltip and table. Untick it if you are on an individual plan.
+The refresh reads the rate and the threshold from the same Cursor pricing page as the model
+table, and decides each model's eligibility from the cache-read price stored in the
+snapshot. Cursor applies the threshold "across every pricing tier", but tier prices only
+appear in the table's free-text notes, so the refresh compares the listed price. A
+third-party model with no cache-read price is counted as paying the rate. The **Cursor Token
+Rate (Teams/Enterprise)** checkbox in the chart's Pricing settings, on by default, adds it to
+every price shown in the chart, tooltip and table. Untick it if you are on an individual
+plan.
 
-A snapshot written before this (schema version 1) is reported as stale: run
-`npm run refresh` again and drop the new `data/models.json`.
+A snapshot written before the threshold rule (schema version 1 or 2) is reported as stale:
+run `npm run refresh` again and drop the new `data/models.json`.
 
 Data: Artificial Analysis (artificialanalysis.ai)

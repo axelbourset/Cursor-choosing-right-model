@@ -5,7 +5,7 @@ const nullableNumber = z.number().nullable()
 
 /** Bumping this rejects every older snapshot. Referenced by `snapshotSchema` and by the
  *  loader's staleness check, so the writer and reader cannot disagree. */
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 
 /** One Cursor model joined to its Artificial Analysis record. The unit the whole app
  *  renders; every nullable field means "not measured", never zero. */
@@ -54,11 +54,15 @@ export const unmatchedEntrySchema = z.object({
 export type UnmatchedEntry = z.infer<typeof unmatchedEntrySchema>
 
 /** Cursor's flat per-token surcharge on eligible third-party models (Teams and Enterprise
- *  plans), parsed from the `## Cursor Token Rate` section of the pricing page. Kept beside
- *  the rows so the site can add it without hard-coding an amount Cursor may change. */
+ *  plans, BYOK requests included), parsed from the `## Cursor Token Rate` section of the
+ *  pricing page. Kept beside the rows so the site can add it without hard-coding an amount
+ *  Cursor may change. */
 export const cursorTokenRateSchema = z.object({
   usdPerMillionTokens: z.number().nonnegative(),
-  excludedModels: z.array(z.string().min(1)),
+  /** Third-party models whose cache-read price is strictly below this are exempt. Compared
+   *  against each row's `priceCacheRead`. Cursor applies it "across every pricing tier", which
+   *  is not checked: tier prices only appear in the table's free-text notes. */
+  exemptCacheReadBelowUsdPerMillionTokens: z.number().nonnegative(),
 })
 export type CursorTokenRate = z.infer<typeof cursorTokenRateSchema>
 

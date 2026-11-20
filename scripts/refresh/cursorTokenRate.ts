@@ -1,6 +1,5 @@
-import type { CursorTokenRate } from '@schema/snapshot'
-import { CursorMarkdownError, stripModelLink } from './parseCursorMarkdown'
-import { deriveCursorSlug } from './slug'
+import type { CursorTokenRate, ModelRow } from '@schema/snapshot'
+import { CursorMarkdownError } from './parseCursorMarkdown'
 
 /** Cursor's own models never pay the rate ("Cursor models, including Grok and Composer").
  *  The catalogue lists all of them under this provider. */
@@ -9,8 +8,10 @@ export const CURSOR_FIRST_PARTY_PROVIDER = 'Cursor'
 const SECTION_HEADING = '## Cursor Token Rate'
 // Whitespace-tolerant, so a paragraph re-wrapped across lines still matches.
 const RATE_PATTERN = /Cursor\s+Token\s+Rate\s+of\s+\$(\d+(?:\.\d+)?)\s+per\s+million\s+tokens/
-const EXCLUSION_INTRO_PATTERN = /excluded from the Cursor Token Rate/i
-const BULLET_PATTERN = /^[-*]\s+(.+)$/
+// "does not apply" and "strictly below" are both required word for word: a sentence that
+// flips either one would parse to the same number with the opposite meaning, so it must throw.
+const EXEMPTION_PATTERN =
+  /does\s+not\s+apply\s+to\s+third-party\s+models\s+whose\s+cache-read\s+price\s+is\s+strictly\s+below\s+\$(\d+(?:\.\d+)?)\s+per\s+million\s+tokens/
 
 /** The lines between the section heading and the next level-2 heading. */
 function readSection(markdown: string): readonly string[] {
@@ -24,78 +25,48 @@ function readSection(markdown: string): readonly string[] {
   return end === -1 ? rest : rest.slice(0, end)
 }
 
-/** The bullet block after the "excluded from" sentence. Blank lines are skipped, so a loose
- *  list (bullets separated by blank lines) still reads in full; the first prose line ends it.
- *  Stopping at a blank line instead would silently drop every exclusion after the first. */
-function readExclusions(section: readonly string[]): readonly string[] {
-  const intro = section.findIndex((line) => EXCLUSION_INTRO_PATTERN.test(line))
-  if (intro === -1) {
-    throw new CursorMarkdownError(
-      'Cursor Token Rate exclusion list not found — the section wording looks changed',
-    )
-  }
-
-  const names: string[] = []
-  for (const line of section.slice(intro + 1)) {
-    const text = line.trim()
-    if (text === '') {
-      continue
-    }
-    const bullet = BULLET_PATTERN.exec(text)?.[1]
-    if (bullet === undefined) {
-      break
-    }
-    names.push(stripModelLink(bullet.trim()))
-  }
-  return names
-}
-
-/** PURE. No network, no fs. Reads the rate and its exclusion list from the same
- *  `models-and-pricing.md` document `parseCursorMarkdown` reads the catalogue from.
+/** PURE. No network, no fs. Reads the rate and its cache-read exemption threshold from the
+ *  same `models-and-pricing.md` document `parseCursorMarkdown` reads the catalogue from.
  *
- *  Every miss throws. There is deliberately no fallback to an empty exclusion list: a
- *  reworded sentence would then mark every third-party model eligible and silently add the
- *  rate to prices Cursor does not surcharge. */
+ *  Every miss throws. There is deliberately no default threshold: a reworded sentence would
+ *  then exempt nothing or everything, silently adding the rate to prices Cursor does not
+ *  surcharge or dropping it from prices it does. */
 export function parseCursorTokenRate(markdown: string): CursorTokenRate {
-  const section = readSection(markdown)
+  const section = readSection(markdown).join('\n')
 
-  const amount = RATE_PATTERN.exec(section.join('\n'))?.[1]
+  const amount = RATE_PATTERN.exec(section)?.[1]
   if (amount === undefined) {
     throw new CursorMarkdownError(
       'Cursor Token Rate amount not found — the section wording looks changed',
     )
   }
 
-  const excludedModels = readExclusions(section)
-  if (excludedModels.length === 0) {
+  const threshold = EXEMPTION_PATTERN.exec(section)?.[1]
+  if (threshold === undefined) {
     throw new CursorMarkdownError(
-      'Cursor Token Rate exclusion list is empty — the list format looks changed',
+      'Cursor Token Rate cache-read exemption not found — the section wording looks changed',
     )
   }
 
-  return { usdPerMillionTokens: Number(amount), excludedModels: [...excludedModels] }
+  return {
+    usdPerMillionTokens: Number(amount),
+    exemptCacheReadBelowUsdPerMillionTokens: Number(threshold),
+  }
 }
 
-/** Exclusion names compared by slug, so case and punctuation drift between the list and the
- *  pricing table still match. */
-export function excludedSlugs(rate: CursorTokenRate): ReadonlySet<string> {
-  return new Set(rate.excludedModels.map(deriveCursorSlug))
-}
-
-/** PURE. Whether Cursor adds its Token Rate to this model's list prices. */
+/** PURE. Whether Cursor adds its Token Rate to this model's list prices. Cursor's own models
+ *  never pay it. A third-party model is exempt only when its cache-read price is strictly
+ *  below the threshold; the listed price stands in for every pricing tier. A missing price
+ *  cannot prove the exemption, so the model pays. */
 export function isTokenRateEligible(
-  model: { readonly provider: string; readonly cursorSlug: string },
-  excluded: ReadonlySet<string>,
+  model: Pick<ModelRow, 'provider' | 'priceCacheRead'>,
+  rate: Pick<CursorTokenRate, 'exemptCacheReadBelowUsdPerMillionTokens'>,
 ): boolean {
-  return model.provider !== CURSOR_FIRST_PARTY_PROVIDER && !excluded.has(model.cursorSlug)
-}
-
-/** PURE. Exclusion names with no catalogue row. Informational: Cursor lists models it no
- *  longer prices, so these are expected — but a name drifting away from the table would
- *  also land here, and its model would then wrongly pay the rate. */
-export function unmatchedExclusions(
-  rate: CursorTokenRate,
-  catalogueSlugs: ReadonlySet<string>,
-): readonly string[] {
-  return rate.excludedModels.filter((name) => !catalogueSlugs.has(deriveCursorSlug(name)))
+  if (model.provider === CURSOR_FIRST_PARTY_PROVIDER) {
+    return false
+  }
+  return (
+    model.priceCacheRead === null ||
+    model.priceCacheRead >= rate.exemptCacheReadBelowUsdPerMillionTokens
+  )
 }
