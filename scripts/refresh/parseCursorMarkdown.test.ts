@@ -266,6 +266,23 @@ describe('parseCursorMarkdown', () => {
     expectCursorMarkdownError(() => parseCursorMarkdown(broken), /readable output price/)
   })
 
+  test('13e — a format change in the cache-read column is caught: it decides Token Rate eligibility', async () => {
+    const markdown = await loadFixture('cursor-models.fixture.md')
+    const broken = markdown
+      .split('\n')
+      .map((line) => {
+        const cells = line.split('|')
+        if (cells.length !== 9 || line.includes('| Model ') || /^\|\s*-/.test(line)) {
+          return line
+        }
+        cells[5] = cells[5]!.replace(/\$([\d.]+)/, '$$$1/M')
+        return cells.join('|')
+      })
+      .join('\n')
+
+    expectCursorMarkdownError(() => parseCursorMarkdown(broken), /readable cacheRead price/)
+  })
+
   test('14 — the Plans table on the same page contributes 0 rows', async () => {
     const markdown = await loadFixture('cursor-models.fixture.md')
 
