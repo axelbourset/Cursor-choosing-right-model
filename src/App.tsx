@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import './styles.css'
-import type { Snapshot } from '@schema/snapshot'
-import type { SnapshotSource } from './snapshot/loadSnapshot'
+import { displayedSnapshot, type LoadedSnapshot } from './snapshot/loadSnapshot'
 import { withCursorTokenRate } from '@domain/price'
 import { selectPlottable } from '@domain/selection'
 import { CostScatterChart } from './charts/CostScatterChart'
@@ -10,11 +9,6 @@ import { useSnapshot } from './snapshot/useSnapshot'
 import { ModelTable } from './table/ModelTable'
 import { StatStrip } from './ui/StatStrip'
 import { useViewState } from './useViewState'
-
-type LoadedInfo = {
-  readonly snapshot: Snapshot
-  readonly source: SnapshotSource
-}
 
 const GENERATED_AT_FORMAT = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
@@ -36,7 +30,7 @@ function Header({
   onUseLocal,
   onClear,
 }: {
-  readonly loaded: LoadedInfo | null
+  readonly loaded: LoadedSnapshot | null
   readonly onReplace: (file: File) => void
   readonly onUseLocal: () => void
   readonly onClear: () => void
@@ -125,11 +119,9 @@ export function App() {
   const snapshotHook = useSnapshot()
   const { state, set } = useViewState()
 
-  const okResult =
-    snapshotHook.result.kind === 'ok' || snapshotHook.result.kind === 'unsaved'
-      ? snapshotHook.result
-      : null
-  const snapshot = okResult?.snapshot ?? null
+  // After a failed replace this is still the previous snapshot, shown under the error.
+  const shown = displayedSnapshot(snapshotHook.result, snapshotHook.lastGood)
+  const snapshot = shown?.snapshot ?? null
   // One adjusted array for the chart, the frontier and the table alike, so they cannot
   // disagree. Memoised so the chart's own selection memo does not churn on every render.
   const rows = useMemo(() => {
@@ -149,7 +141,7 @@ export function App() {
   return (
     <div className="app-container">
       <Header
-        loaded={okResult ? { snapshot: okResult.snapshot, source: okResult.source } : null}
+        loaded={shown}
         onReplace={(file) => {
           void snapshotHook.acceptFile(file)
         }}
@@ -167,7 +159,7 @@ export function App() {
           void snapshotHook.acceptFile(file)
         }}
       >
-        {okResult ? (
+        {shown ? (
           <>
             <StatStrip
               models={rows.length}
@@ -184,7 +176,7 @@ export function App() {
               costAxis={state.costAxis}
               showFrontier={state.showFrontier}
               includeCursorTokenRate={state.includeCursorTokenRate}
-              cursorTokenRate={okResult.snapshot.cursorTokenRate}
+              cursorTokenRate={shown.snapshot.cursorTokenRate}
               onFiltersChange={(filters) => {
                 set({ filters })
               }}

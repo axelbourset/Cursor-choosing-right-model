@@ -212,6 +212,96 @@ describe('useSnapshot', () => {
     vi.unstubAllGlobals()
   })
 
+  test('10b — a stale file keeps lastGood, and storage, as they were', async () => {
+    const raw = JSON.stringify(validSnapshot())
+    localStorage.setItem(STORAGE_KEY, raw)
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }))
+
+    const { result } = renderHook(() => useSnapshot())
+    await waitFor(() => {
+      expect(result.current.result.kind).toBe('ok')
+    })
+    const previous = result.current.lastGood
+
+    const staleRaw = JSON.stringify({ ...validSnapshot(), schemaVersion: 2 })
+    mockFileReader(staleRaw)
+    await act(async () => {
+      await result.current.acceptFile(new File([staleRaw], 'old.json'))
+    })
+
+    expect(result.current.result.kind).toBe('stale')
+    expect(result.current.lastGood).not.toBeNull()
+    expect(result.current.lastGood).toEqual(previous)
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(raw)
+  })
+
+  test('10c — a local file that fails to load drops lastGood, since storage no longer holds it', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(validSnapshot()))
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }))
+
+    const { result } = renderHook(() => useSnapshot())
+    await waitFor(() => {
+      expect(result.current.lastGood).not.toBeNull()
+    })
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ ...validSnapshot(), schemaVersion: 2 }), { status: 200 }),
+    )
+    await act(async () => {
+      await result.current.useLocalFile()
+    })
+
+    expect(result.current.result.kind).toBe('stale')
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(result.current.lastGood).toBeNull()
+  })
+
+  test('10d — after a second good replace, a bad file falls back to the newer snapshot', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(validSnapshot()))
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }))
+    const { result } = renderHook(() => useSnapshot())
+    await waitFor(() => {
+      expect(result.current.lastGood).not.toBeNull()
+    })
+
+    const newerRaw = JSON.stringify({ ...validSnapshot(), generatedAt: '2026-09-01T00:00:00.000Z' })
+    mockFileReader(newerRaw)
+    await act(async () => {
+      await result.current.acceptFile(new File([newerRaw], 'newer.json'))
+    })
+    mockFileReader('not json')
+    await act(async () => {
+      await result.current.acceptFile(new File(['not json'], 'bad.json'))
+    })
+
+    expect(result.current.result.kind).toBe('invalid')
+    expect(result.current.lastGood?.snapshot.generatedAt).toBe('2026-09-01T00:00:00.000Z')
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(newerRaw)
+  })
+
+  test('10e — after "use local file" loads, a bad file falls back to the local snapshot', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(validSnapshot()))
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }))
+    const { result } = renderHook(() => useSnapshot())
+    await waitFor(() => {
+      expect(result.current.lastGood?.source).toBe('dropped')
+    })
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify(validSnapshot()), { status: 200 }),
+    )
+    await act(async () => {
+      await result.current.useLocalFile()
+    })
+    mockFileReader('not json')
+    await act(async () => {
+      await result.current.acceptFile(new File(['not json'], 'bad.json'))
+    })
+
+    expect(result.current.result.kind).toBe('invalid')
+    expect(result.current.lastGood?.source).toBe('local')
+  })
+
   test('11 — a failed local re-resolve does not wipe the stored snapshot', async () => {
     const stored = JSON.stringify(validSnapshot())
     const store = new Map([[STORAGE_KEY, stored]])

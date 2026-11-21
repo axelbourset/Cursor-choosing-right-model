@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SNAPSHOT_DEV_URL, type Snapshot } from '@schema/snapshot'
+import { SNAPSHOT_DEV_URL } from '@schema/snapshot'
 import {
   clearStoredSnapshot,
+  displayedSnapshot,
   loadSnapshot,
   storeDroppedSnapshot,
+  type LoadedSnapshot,
   type LoadResult,
   type StoragePort,
 } from './loadSnapshot'
 
 export type UseSnapshot = {
   readonly result: LoadResult
-  /** The last successfully-loaded snapshot, retained so an invalid drop does not blank the view. */
-  readonly lastGood: Snapshot | null
+  /** The last snapshot that loaded, shown under the error when a later load fails so the view
+   *  does not blank. Null once it is cleared away. */
+  readonly lastGood: LoadedSnapshot | null
   readonly acceptFile: (file: File) => Promise<void>
   readonly useLocalFile: () => Promise<void>
   readonly clear: () => void
@@ -76,7 +79,7 @@ function readFileAsText(file: File): Promise<string> {
 export function useSnapshot(): UseSnapshot {
   const storage = useMemo(() => createLocalStoragePort(), [])
   const [result, setResult] = useState<LoadResult>({ kind: 'loading' })
-  const [lastGood, setLastGood] = useState<Snapshot | null>(null)
+  const [lastGood, setLastGood] = useState<LoadedSnapshot | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -90,9 +93,7 @@ export function useSnapshot(): UseSnapshot {
         return
       }
       setResult(loaded)
-      if (loaded.kind === 'ok') {
-        setLastGood(loaded.snapshot)
-      }
+      setLastGood(displayedSnapshot(loaded, null))
     }
     void run()
     return () => {
@@ -116,9 +117,8 @@ export function useSnapshot(): UseSnapshot {
 
       const stored = storeDroppedSnapshot(raw, storage)
       setResult(stored)
-      if (stored.kind === 'ok' || stored.kind === 'unsaved') {
-        setLastGood(stored.snapshot)
-      }
+      // A rejected file leaves storage untouched, so the previous snapshot stays.
+      setLastGood((previous) => displayedSnapshot(stored, previous))
     },
     [storage],
   )
@@ -130,9 +130,9 @@ export function useSnapshot(): UseSnapshot {
       const loaded = await loadSnapshot({ ...storage, get: () => null }, fetchLocalSnapshot)
       clearStoredSnapshot(storage)
       setResult(loaded)
-      if (loaded.kind === 'ok') {
-        setLastGood(loaded.snapshot)
-      }
+      // Storage no longer holds the previous snapshot, so a local file that fails to load
+      // must not leave it on screen: it would vanish on the next reload.
+      setLastGood(displayedSnapshot(loaded, null))
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       setResult({ kind: 'invalid', errors: [`Could not load the local snapshot: ${message}`] })

@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { CURRENT_SCHEMA_VERSION, type Snapshot } from '@schema/snapshot'
 import {
   clearStoredSnapshot,
+  displayedSnapshot,
   loadSnapshot,
   parseSnapshot,
   STORAGE_KEY,
@@ -210,5 +211,31 @@ describe('clearStoredSnapshot', () => {
     clearStoredSnapshot(storage)
     expect(removeSpy).toHaveBeenCalledOnce()
     expect(removeSpy).toHaveBeenCalledWith(STORAGE_KEY)
+  })
+})
+
+describe('displayedSnapshot', () => {
+  const lastGood = { snapshot: validSnapshot(), source: 'local' as const }
+
+  test('12 — a good load shows itself, and an unsaved one carries the reason', () => {
+    const snapshot = validSnapshot()
+    expect(displayedSnapshot({ kind: 'ok', snapshot, source: 'dropped' }, lastGood)).toEqual({
+      snapshot,
+      source: 'dropped',
+    })
+    expect(
+      displayedSnapshot({ kind: 'unsaved', snapshot, source: 'dropped', reason: 'full' }, null),
+    ).toEqual({ snapshot, source: 'dropped', unsavedReason: 'full' })
+  })
+
+  test('13 — a failed load falls back to the last good snapshot', () => {
+    expect(displayedSnapshot({ kind: 'invalid', errors: ['bad'] }, lastGood)).toBe(lastGood)
+    expect(displayedSnapshot({ kind: 'stale', found: 2, expected: 3 }, lastGood)).toBe(lastGood)
+    expect(displayedSnapshot({ kind: 'stale', found: 2, expected: 3 }, null)).toBeNull()
+  })
+
+  test('14 — loading and empty show nothing, whatever came before', () => {
+    expect(displayedSnapshot({ kind: 'loading' }, lastGood)).toBeNull()
+    expect(displayedSnapshot({ kind: 'empty' }, lastGood)).toBeNull()
   })
 })

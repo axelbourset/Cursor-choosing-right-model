@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react'
-import type { Snapshot } from '@schema/snapshot'
-import type { LoadResult } from './loadSnapshot'
+import { displayedSnapshot, type LoadedSnapshot, type LoadResult } from './loadSnapshot'
 
 export type SnapshotDropZoneProps = {
   readonly result: LoadResult
-  readonly lastGood: Snapshot | null
+  readonly lastGood: LoadedSnapshot | null
   readonly onFile: (file: File) => void
   readonly children?: ReactNode
 }
@@ -97,7 +96,7 @@ function StaleContent({ found, expected }: { readonly found: number; readonly ex
 
 export function SnapshotDropZone({ result, lastGood, onFile, children }: SnapshotDropZoneProps) {
   const loaded = result.kind === 'ok' || result.kind === 'unsaved'
-  const showChildren = loaded || (result.kind === 'invalid' && lastGood !== null)
+  const shown = displayedSnapshot(result, lastGood)
 
   // `loading` renders nothing at all: it is the state on mount, and showing the onboarding
   // guide there flashes "get an API key, git clone…" at users who already have a snapshot.
@@ -109,16 +108,22 @@ export function SnapshotDropZone({ result, lastGood, onFile, children }: Snapsho
     )
   }
 
+  // The children sit outside `.dropzone`: it is a 32rem onboarding column, and after a failed
+  // load the last good snapshot renders below it at full width.
   return (
-    <div className={loaded ? undefined : 'dropzone'}>
-      {loaded ? null : <FileInput onFile={onFile} />}
-      {result.kind === 'unsaved' ? <UnsavedNotice reason={result.reason} /> : null}
-      {result.kind === 'empty' ? <EmptyContent /> : null}
-      {result.kind === 'invalid' ? <InvalidContent errors={result.errors} /> : null}
-      {result.kind === 'stale' ? (
-        <StaleContent found={result.found} expected={result.expected} />
-      ) : null}
-      {showChildren ? children : null}
+    <div>
+      {loaded ? null : (
+        <div className="dropzone">
+          <FileInput onFile={onFile} />
+          {result.kind === 'empty' ? <EmptyContent /> : null}
+          {result.kind === 'invalid' ? <InvalidContent errors={result.errors} /> : null}
+          {result.kind === 'stale' ? (
+            <StaleContent found={result.found} expected={result.expected} />
+          ) : null}
+        </div>
+      )}
+      {shown?.unsavedReason === undefined ? null : <UnsavedNotice reason={shown.unsavedReason} />}
+      {shown === null ? null : children}
     </div>
   )
 }

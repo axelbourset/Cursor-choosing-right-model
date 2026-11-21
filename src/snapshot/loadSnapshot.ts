@@ -20,6 +20,35 @@ export type LoadResult =
     }
   | { readonly kind: 'stale'; readonly found: number; readonly expected: number }
 
+/** A snapshot that loaded, and where it came from. */
+export type LoadedSnapshot = {
+  readonly snapshot: Snapshot
+  readonly source: SnapshotSource
+  /** Why storage could not keep it. Absent when it was saved, or came from the local file. */
+  readonly unsavedReason?: string
+}
+
+/** PURE. What the page shows for `result`: the snapshot it loaded, or, after a load that
+ *  failed (`invalid` or `stale`), the last good one, so a bad replace does not blank the view.
+ *  Null while loading and when there is nothing to show. */
+export function displayedSnapshot(
+  result: LoadResult,
+  lastGood: LoadedSnapshot | null,
+): LoadedSnapshot | null {
+  switch (result.kind) {
+    case 'ok':
+      return { snapshot: result.snapshot, source: result.source }
+    case 'unsaved':
+      return { snapshot: result.snapshot, source: result.source, unsavedReason: result.reason }
+    case 'invalid':
+    case 'stale':
+      return lastGood
+    case 'loading':
+    case 'empty':
+      return null
+  }
+}
+
 export const STORAGE_KEY = 'cursor-model-picker:snapshot'
 
 export type StoragePort = {

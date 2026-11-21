@@ -307,6 +307,35 @@ describe('App', () => {
     expect(clear).toHaveBeenCalledOnce()
   })
 
+  test('13b — a failed replace keeps the last good snapshot on screen, under the error', () => {
+    const lastGood = { snapshot: makeSnapshot([makeRow()]), source: 'dropped' as const }
+    const failures: UseSnapshot['result'][] = [
+      { kind: 'stale', found: 2, expected: 3 },
+      { kind: 'invalid', errors: ['Unexpected token'] },
+    ]
+    for (const failure of failures) {
+      mockSnapshotHook(failure, { lastGood })
+      render(<App />)
+      const table = screen.getByRole('table', { name: 'Cursor models' })
+      const message = screen.getByText(/Snapshot version 2|Unexpected token/)
+      expect(tbodyRows()).toHaveLength(1)
+      expect(within(table).getByText('Test Model')).toBeInTheDocument()
+      expect(plottedCosts()).toHaveLength(1)
+      expect(screen.getByTestId('generated-at')).toBeInTheDocument()
+      expect(table.closest('.dropzone')).toBeNull()
+      expect(message.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      cleanup()
+      setOption.mockClear()
+    }
+  })
+
+  test('13c — a failed load with nothing to fall back on shows no table', () => {
+    mockSnapshotHook({ kind: 'stale', found: 2, expected: 3 })
+    render(<App />)
+    expect(screen.getByText(/Snapshot version 2/)).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
   test('20 — the Cursor Token Rate is on by default and priced into eligible rows only', () => {
     const models = [
       makeRow({

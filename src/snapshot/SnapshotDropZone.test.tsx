@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { Snapshot } from '@schema/snapshot'
 import { SnapshotDropZone } from './SnapshotDropZone'
-import type { LoadResult } from './loadSnapshot'
+import type { LoadedSnapshot, LoadResult } from './loadSnapshot'
 
 function validSnapshot(): Snapshot {
   return {
@@ -50,7 +50,7 @@ function validSnapshot(): Snapshot {
 function renderZone(
   result: LoadResult,
   options: {
-    lastGood?: Snapshot | null
+    lastGood?: LoadedSnapshot | null
     onFile?: (file: File) => void
     children?: React.ReactNode
   } = {},
@@ -62,6 +62,12 @@ function renderZone(
     </SnapshotDropZone>,
   )
   return { onFile }
+}
+
+/** The kept snapshot renders after the message and outside the 32rem `.dropzone` column. */
+function expectBelowTheDropZone(child: HTMLElement, message: HTMLElement) {
+  expect(child.closest('.dropzone')).toBeNull()
+  expect(message.compareDocumentPosition(child) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 }
 
 afterEach(() => {
@@ -129,9 +135,40 @@ describe('SnapshotDropZone', () => {
   test('14 — invalid with lastGood still renders children', () => {
     renderZone(
       { kind: 'invalid', errors: ['bad'] },
-      { lastGood: validSnapshot(), children: <div>child content</div> },
+      {
+        lastGood: { snapshot: validSnapshot(), source: 'dropped' },
+        children: <div>child content</div>,
+      },
     )
     expect(screen.getByText('bad')).toBeInTheDocument()
+    expectBelowTheDropZone(screen.getByText('child content'), screen.getByText('bad'))
+  })
+
+  test('14b — stale with lastGood still renders children, under the version message', () => {
+    renderZone(
+      { kind: 'stale', found: 2, expected: 3 },
+      {
+        lastGood: { snapshot: validSnapshot(), source: 'dropped' },
+        children: <div>child content</div>,
+      },
+    )
+    expectBelowTheDropZone(
+      screen.getByText('child content'),
+      screen.getByText(/Snapshot version 2/),
+    )
+  })
+
+  test('14c — a fallback that was never saved keeps its not-saved notice', () => {
+    renderZone(
+      { kind: 'invalid', errors: ['bad'] },
+      {
+        lastGood: { snapshot: validSnapshot(), source: 'dropped', unsavedReason: 'QuotaExceeded' },
+        children: <div>child content</div>,
+      },
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /not saved for next time \(QuotaExceeded\)/,
+    )
     expect(screen.getByText('child content')).toBeInTheDocument()
   })
 
