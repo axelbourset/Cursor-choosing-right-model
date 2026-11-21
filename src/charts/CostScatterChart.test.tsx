@@ -64,6 +64,19 @@ function scatterXValues(): number[] {
     .flatMap((s) => s.data.map((point) => point.value[0]))
 }
 
+type RenderedOption = {
+  xAxis: { name: string }
+  tooltip: { formatter: (params: unknown) => string }
+  series: { type: string; data: unknown[] }[]
+}
+
+/** The latest option, with the tooltip rendered for the first plotted point. */
+function renderedLabels(): { axisName: string; tooltip: string } {
+  const option = setOption.mock.calls.at(-1)?.[0] as RenderedOption
+  const point = option.series.find((s) => s.type === 'scatter')?.data[0]
+  return { axisName: option.xAxis.name, tooltip: option.tooltip.formatter({ data: point }) }
+}
+
 function frontierLegendCount(): number {
   const text = screen.getByTestId('frontier-legend').textContent
   const match = /(\d+)/.exec(text)
@@ -485,6 +498,55 @@ describe('CostScatterChart', () => {
     expect(
       screen.getByText(/third-party models whose cache read costs under \$0\.2 per 1M tokens/),
     ).toBeInTheDocument()
+  })
+
+  test('18c — the tooltip carries the applied rate, not the exemption threshold, and the axis names it', () => {
+    render(
+      <CostScatterChart
+        rows={[makeRow({ cursorTokenRateEligible: true })]}
+        filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
+        metric="intelligence"
+        costAxis="input"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
+        onFrontierChange={vi.fn()}
+        includeCursorTokenRate={true}
+        cursorTokenRate={{ usdPerMillionTokens: 0.3, exemptCacheReadBelowUsdPerMillionTokens: 0.2 }}
+        onCursorTokenRateChange={vi.fn()}
+      />,
+    )
+
+    const { axisName, tooltip } = renderedLabels()
+    expect(axisName).toMatch(/incl\. Cursor Token Rate/)
+    expect(tooltip).toContain('Includes the +$0.3 / 1M Cursor Token Rate')
+  })
+
+  test('18d — with the rate unticked, neither the axis title nor the tooltip mentions it', () => {
+    render(
+      <CostScatterChart
+        rows={[makeRow({ cursorTokenRateEligible: true })]}
+        filters={DEFAULT_FILTERS}
+        providers={[]}
+        onFiltersChange={vi.fn()}
+        metric="intelligence"
+        costAxis="input"
+        showFrontier={true}
+        onMetricChange={vi.fn()}
+        onCostAxisChange={vi.fn()}
+        onFrontierChange={vi.fn()}
+        includeCursorTokenRate={false}
+        cursorTokenRate={TOKEN_RATE}
+        onCursorTokenRateChange={vi.fn()}
+      />,
+    )
+
+    const { axisName, tooltip } = renderedLabels()
+    expect(tooltip).toContain('Test Model')
+    expect(axisName).not.toMatch(/Cursor Token Rate/)
+    expect(tooltip).not.toMatch(/Cursor Token Rate/)
   })
 
   test('19 — the chart resizes when its own box does, and stops watching on unmount', () => {
