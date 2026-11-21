@@ -8,8 +8,9 @@ export const CURSOR_FIRST_PARTY_PROVIDER = 'Cursor'
 const SECTION_HEADING = '## Cursor Token Rate'
 // Whitespace-tolerant, so a paragraph re-wrapped across lines still matches.
 const RATE_PATTERN = /Cursor\s+Token\s+Rate\s+of\s+\$(\d+(?:\.\d+)?)\s+per\s+million\s+tokens/
-// "does not apply" and "strictly below" are both required word for word: a sentence that
-// flips either one would parse to the same number with the opposite meaning, so it must throw.
+// "does not apply", "strictly below" and "per million tokens" are all required word for word:
+// a sentence that changes any of them would parse to the same number with another meaning, so
+// it must throw.
 const EXEMPTION_PATTERN =
   /does\s+not\s+apply\s+to\s+third-party\s+models\s+whose\s+cache-read\s+price\s+is\s+strictly\s+below\s+\$(\d+(?:\.\d+)?)\s+per\s+million\s+tokens/
 

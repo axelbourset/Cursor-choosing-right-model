@@ -74,6 +74,28 @@ describe('parseCursorTokenRate', () => {
     )
   })
 
+  test('5b — a "strictly above" boundary throws rather than inverting every flag', () => {
+    const markdown = section(
+      `${RATE_SENTENCE}\n\nThe Cursor Token Rate also does not apply to third-party models whose cache-read price is strictly above $0.10 per million tokens.`,
+    )
+
+    expectCursorMarkdownError(
+      () => parseCursorTokenRate(markdown),
+      /cache-read exemption not found/,
+    )
+  })
+
+  test('5c — a threshold in another unit throws rather than being read as per million', () => {
+    const markdown = section(
+      `${RATE_SENTENCE}\n\nThe Cursor Token Rate also does not apply to third-party models whose cache-read price is strictly below $0.0001 per thousand tokens.`,
+    )
+
+    expectCursorMarkdownError(
+      () => parseCursorTokenRate(markdown),
+      /cache-read exemption not found/,
+    )
+  })
+
   test('6 — a sentence with the opposite polarity throws rather than inverting every flag', () => {
     // Differs from the live sentence only by the missing "not", so it fails only if the
     // pattern requires the negation itself.
