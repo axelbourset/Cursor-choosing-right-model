@@ -46,6 +46,8 @@ chart's Pricing settings, on by default, adds it to every price shown in the cha
 and table. Untick it if you are on an individual plan.
 
 A snapshot written before the threshold rule (schema version 1 or 2) is reported as stale:
-run `npm run refresh` again and drop the new `data/models.json`.
+pull the latest code, run `npm run refresh` again and drop the new `data/models.json`. A
+snapshot newer than the page means the page is the out-of-date side: reload it and drop the
+file again.
 
 Data: Artificial Analysis (artificialanalysis.ai)

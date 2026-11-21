@@ -86,10 +86,18 @@ function InvalidContent({ errors }: { readonly errors: readonly string[] }) {
   )
 }
 
+/** The refresh stamps the schema version of the checkout it runs in, so an older file needs
+ *  the latest code before a new refresh, or it comes out the same. A newer file means this
+ *  page is the older side, usually a tab opened before a deploy. A rejected file is never
+ *  stored, so either way it has to be dropped again. */
 function StaleContent({ found, expected }: { readonly found: number; readonly expected: number }) {
+  const advice =
+    found > expected
+      ? 'this page is out of date: reload it (or pull the latest code if you run it locally), then drop the file again'
+      : 'pull the latest code, re-run npm run refresh, then drop the new file'
   return (
     <p>
-      Snapshot version {found}, this build expects {expected} — re-run npm run refresh
+      Snapshot version {found}, this build expects {expected} — {advice}
     </p>
   )
 }

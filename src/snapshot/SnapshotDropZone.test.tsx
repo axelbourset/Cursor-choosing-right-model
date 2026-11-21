@@ -103,10 +103,21 @@ describe('SnapshotDropZone', () => {
     expect(screen.getByText('bad')).toBeInTheDocument()
   })
 
-  test('6 — stale state shows version mismatch', () => {
-    renderZone({ kind: 'stale', found: 99, expected: 1 })
-    expect(screen.getByText(/99/)).toBeInTheDocument()
-    expect(screen.getByText(/npm run refresh/)).toBeInTheDocument()
+  test('6 — an older snapshot asks for the latest code and a new refresh', () => {
+    renderZone({ kind: 'stale', found: 2, expected: 3 })
+    expect(
+      screen.getByText(
+        'Snapshot version 2, this build expects 3 — pull the latest code, re-run npm run refresh, then drop the new file',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  test('6b — a snapshot newer than the page asks for a reload, not a refresh', () => {
+    renderZone({ kind: 'stale', found: 4, expected: 3 })
+    expect(screen.getByText(/Snapshot version 4, this build expects 3/)).toHaveTextContent(
+      /this page is out of date: reload it .*, then drop the file again$/,
+    )
+    expect(screen.queryByText(/npm run refresh/)).not.toBeInTheDocument()
   })
 
   test('9 — ok state renders children', () => {
