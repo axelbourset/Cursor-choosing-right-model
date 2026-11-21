@@ -181,7 +181,7 @@ export function parseCursorMarkdown(markdown: string, minRows = 20): readonly Cu
   // format change in ONE column (say `$15/M` in Output) leaves every other column parsing,
   // so nothing throws and the affected cost axis silently goes blank across the catalogue.
   // Cache read is included because it also decides Cursor Token Rate eligibility: a blank
-  // column would make every third-party model pay the rate.
+  // column would make every third-party model that pricing.json does not cover pay the rate.
   if (deduped.length >= COLUMN_SAMPLE_FLOOR) {
     for (const column of ['input', 'output', 'cacheRead'] as const) {
       const present = deduped.filter((row) => row[column] !== null).length
