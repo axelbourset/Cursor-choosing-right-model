@@ -1,7 +1,7 @@
 # Cursor Model Picker
 
 A public static site on GitHub Pages that helps you choose a Cursor model — three score
-charts, a cost/quality scatter with a Pareto frontier, and a sortable table of all 47 models.
+charts, a cost/quality scatter with a Pareto frontier, and a sortable table of every Cursor model.
 
 No Artificial Analysis data is included in this repository or the deployed bundle. You generate
 your own snapshot locally.
